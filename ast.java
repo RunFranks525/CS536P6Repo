@@ -171,15 +171,12 @@ class DeclListNode extends ASTnode {
     public void nameAnalysis(SymTable symTab) {
         nameAnalysis(symTab, symTab);
     }
-<<<<<<< HEAD
 
     public void codeGen(){
 	for (DeclNode node : myDecls) {
 		node.codeGen();
 	}
     }
-=======
->>>>>>> Adding a main checker to the program name analysis function
 
     /**
      * nameAnalysis
@@ -576,7 +573,6 @@ class FnDeclNode extends DeclNode {
         }
 
         return null;
-<<<<<<< HEAD
     }
 
     public void codeGen(){
@@ -585,10 +581,6 @@ class FnDeclNode extends DeclNode {
 	//TODO: do fn epilogue
     }
 
-=======
-    }
-
->>>>>>> Adding a main checker to the program name analysis function
     /**
      * typeCheck
      */
@@ -854,6 +846,10 @@ class AssignStmtNode extends StmtNode {
         myAssign.typeCheck();
     }
 
+    public void codeGen(){
+	myAssign.codeGen();
+    }
+
     public void unparse(PrintWriter p, int indent) {
         doIndent(p, indent);
         myAssign.unparse(p, -1); // no parentheses
@@ -889,6 +885,11 @@ class PostIncStmtNode extends StmtNode {
         }
     }
 
+
+    public void codeGen(){
+	//TODO: generate code to add 1 to the given variable
+    }
+
     public void unparse(PrintWriter p, int indent) {
         doIndent(p, indent);
         myExp.unparse(p, 0);
@@ -922,6 +923,11 @@ class PostDecStmtNode extends StmtNode {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
                          "Arithmetic operator applied to non-numeric operand");
         }
+    }
+
+
+    public void codeGen(){
+	//TODO: generate code to subtract 1 to the given variable
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -967,6 +973,11 @@ class ReadStmtNode extends StmtNode {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
                          "Attempt to read a struct variable");
         }
+    }
+
+
+    public void codeGen(){
+	//TODO: generate code to load a word into a register
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1018,6 +1029,11 @@ class WriteStmtNode extends StmtNode {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
                          "Attempt to write void");
         }
+    }
+
+
+    public void codeGen(){
+	//TODO: generate code to store a word in memory
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1072,6 +1088,15 @@ class IfStmtNode extends StmtNode {
         }
 
         myStmtList.typeCheck(retType);
+    }
+
+
+    public void codeGen(){
+	myDeclList.codeGen();
+	myStmtList.codeGen();
+	//TODO: generate code to place boolean values into a register
+	//TODO: generate code for conditional branch
+	
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1152,6 +1177,17 @@ class IfElseStmtNode extends StmtNode {
         myElseStmtList.typeCheck(retType);
     }
 
+
+    public void codeGen(){
+	//TODO: generate code to place boolean values into a register
+	myIfDeclList.codeGen();
+	myIfStmtList.codeGen();
+	//TODO: generate code for conditional branch
+	//TODO: generate code for the statements below the else
+	myElseDeclList.codeGen();
+	myElseStmtList.codeGen();
+    }
+
     public void unparse(PrintWriter p, int indent) {
         doIndent(p, indent);
         p.print("if (");
@@ -1220,6 +1256,13 @@ class WhileStmtNode extends StmtNode {
         myStmtList.typeCheck(retType);
     }
 
+    public void codeGen(){
+	//TODO: generate code to place boolean values into a register
+	//TODO: generate code for conditional branch
+	myDeclList.codeGen();
+	myStmtList.codeGen();	
+    }
+
     public void unparse(PrintWriter p, int indent) {
         doIndent(p, indent);
         p.print("while (");
@@ -1255,6 +1298,10 @@ class CallStmtNode extends StmtNode {
      */
     public void typeCheck(Type retType) {
         myCall.typeCheck();
+    }
+
+    public void codeGen(){
+	myCall.codeGen();	
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1309,6 +1356,12 @@ class ReturnStmtNode extends StmtNode {
 
     }
 
+
+    public void codeGen(){
+	
+	//TODO: generate code to pop the return address (for PC) from stack
+    }
+
     public void unparse(PrintWriter p, int indent) {
         doIndent(p, indent);
         p.print("return");
@@ -1336,6 +1389,7 @@ abstract class ExpNode extends ASTnode {
     abstract public Type typeCheck();
     abstract public int lineNum();
     abstract public int charNum();
+    abstract public int codeGen();
 }
 
 class IntLitNode extends ExpNode {
@@ -1364,6 +1418,11 @@ class IntLitNode extends ExpNode {
      */
     public Type typeCheck() {
         return new IntType();
+    }
+
+
+    public void codeGen(){
+	
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1403,6 +1462,10 @@ class StringLitNode extends ExpNode {
         return new StringType();
     }
 
+    public void codeGen(){
+	
+    }
+
     public void unparse(PrintWriter p, int indent) {
         p.print(myStrVal);
     }
@@ -1437,6 +1500,10 @@ class TrueNode extends ExpNode {
      */
     public Type typeCheck() {
         return new BoolType();
+    }
+
+    public void codeGen(){
+	
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1474,6 +1541,10 @@ class FalseNode extends ExpNode {
         return new BoolType();
     }
 
+
+    public void codeGen(){
+	
+    }
     public void unparse(PrintWriter p, int indent) {
         p.print("false");
     }
@@ -1551,6 +1622,10 @@ class IdNode extends ExpNode {
             System.exit(-1);
         }
         return null;
+    }
+
+    public void codeGen(){
+	
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1698,6 +1773,10 @@ class DotAccessExpNode extends ExpNode {
         return myId.typeCheck();
     }
 
+    public void codeGen(){
+	//TODO: absolutely freaking NOTHING! :)
+    }
+
     public void unparse(PrintWriter p, int indent) {
         myLoc.unparse(p, 0);
         p.print(".");
@@ -1778,6 +1857,10 @@ class AssignNode extends ExpNode {
         return retType;
     }
 
+    public void codeGen(){
+	//TODO: generate code to store the result of one Exp in the register for another Exp
+    }
+
     public void unparse(PrintWriter p, int indent) {
         if (indent != -1)  p.print("(");
         myLhs.unparse(p, 0);
@@ -1855,6 +1938,10 @@ class CallExpNode extends ExpNode {
         return fnSym.getReturnType();
     }
 
+    public void codeGen(){
+
+    }
+
     // ** unparse **
     public void unparse(PrintWriter p, int indent) {
         myId.unparse(p, 0);
@@ -1890,6 +1977,10 @@ abstract class UnaryExpNode extends ExpNode {
     public int charNum() {
         return myExp.charNum();
     }
+ 
+    public void codeGen(){
+
+    }
 
     /**
      * nameAnalysis
@@ -1923,6 +2014,10 @@ abstract class BinaryExpNode extends ExpNode {
      */
     public int charNum() {
         return myExp1.charNum();
+    }
+
+    public void codeGen(){
+
     }
 
     /**
@@ -1969,6 +2064,10 @@ class UnaryMinusNode extends UnaryExpNode {
         return retType;
     }
 
+    public void codeGen(){
+	//TODO: generate code to multiply register represented by Exp by -1
+    }
+
     public void unparse(PrintWriter p, int indent) {
         p.print("(-");
         myExp.unparse(p, 0);
@@ -1999,6 +2098,10 @@ class NotNode extends UnaryExpNode {
         }
 
         return retType;
+    }
+
+    public void codeGen(){
+	//TODO: generate code to do NOT on reg represented by Exp
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2043,6 +2146,11 @@ abstract class ArithmeticExpNode extends BinaryExpNode {
 
         return retType;
     }
+
+    public void codeGen(){
+
+    }
+
 }
 
 abstract class LogicalExpNode extends BinaryExpNode {
@@ -2075,6 +2183,10 @@ abstract class LogicalExpNode extends BinaryExpNode {
         }
 
         return retType;
+    }
+
+    public void codeGen(){
+
     }
 }
 
@@ -2127,6 +2239,10 @@ abstract class EqualityExpNode extends BinaryExpNode {
 
         return retType;
     }
+
+    public void codeGen(){
+
+    }
 }
 
 abstract class RelationalExpNode extends BinaryExpNode {
@@ -2160,6 +2276,10 @@ abstract class RelationalExpNode extends BinaryExpNode {
 
         return retType;
     }
+
+    public void codeGen(){
+
+    }
 }
 
 class PlusNode extends ArithmeticExpNode {
@@ -2174,6 +2294,10 @@ class PlusNode extends ArithmeticExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen(){
+	//TODO: generate code to ADD the regs together and store in a temp reg
+    }
 }
 
 class MinusNode extends ArithmeticExpNode {
@@ -2187,6 +2311,10 @@ class MinusNode extends ArithmeticExpNode {
         p.print(" - ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen(){
+	//TODO: generate code to SUB the regs together and store in a temp reg
     }
 }
 
@@ -2203,6 +2331,10 @@ class TimesNode extends ArithmeticExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen(){
+	//TODO: generate code to MULT the regs together and then store the result from Hi reg in temp reg
+    }
 }
 
 class DivideNode extends ArithmeticExpNode {
@@ -2216,6 +2348,10 @@ class DivideNode extends ArithmeticExpNode {
         p.print(" / ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen(){
+	//TODO: generate code to DIV the regs together and then store the result from Hi reg in temp reg
     }
 }
 
@@ -2231,6 +2367,10 @@ class AndNode extends LogicalExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen(){
+	//TODO: generate code to ADD the regs together and then store the result in temp reg
+    }
 }
 
 class OrNode extends LogicalExpNode {
@@ -2244,6 +2384,10 @@ class OrNode extends LogicalExpNode {
         p.print(" || ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen(){
+	//TODO: generate code to OR the regs together and then store the result in temp reg
     }
 }
 
@@ -2259,6 +2403,10 @@ class EqualsNode extends EqualityExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen(){
+	//TODO: generate code to compare regs together and then store the result in temp reg
+    }
 }
 
 class NotEqualsNode extends EqualityExpNode {
@@ -2272,6 +2420,10 @@ class NotEqualsNode extends EqualityExpNode {
         p.print(" != ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen(){
+	//TODO: generate code to compare the regs together and then store the result in temp reg
     }
 }
 
@@ -2287,6 +2439,10 @@ class LessNode extends RelationalExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen(){
+	//TODO: generate code to compare the regs together and then store the result in temp reg
+    }
 }
 
 class GreaterNode extends RelationalExpNode {
@@ -2300,6 +2456,10 @@ class GreaterNode extends RelationalExpNode {
         p.print(" > ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen(){
+	//TODO: generate code to compare the regs together and then store the result in temp reg
     }
 }
 
@@ -2315,6 +2475,10 @@ class LessEqNode extends RelationalExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen(){
+	//TODO: generate code to compare the regs together and then store the result in temp reg
+    }
 }
 
 class GreaterEqNode extends RelationalExpNode {
@@ -2328,5 +2492,9 @@ class GreaterEqNode extends RelationalExpNode {
         p.print(" >= ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen(){
+	//TODO: generate code to compare the regs together and then store the result in temp reg
     }
 }
