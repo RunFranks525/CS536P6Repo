@@ -255,7 +255,7 @@ class FormalsListNode extends ASTnode {
       for(FormalDeclNode node : myFormals){
         totalFormalOffsetSize += node.getOffsetSize();
       }
-      return totalForma;OffsetSize;
+      return totalFormalOffsetSize;
     }
 
     /**
@@ -304,7 +304,7 @@ class FnBodyNode extends ASTnode {
         myStmtList.typeCheck(retType);
     }
 
-    public int computeOffsetFromLocals(){
+    public int totalLocalsOffsetSize(){
       return myDeclList.getOffsetSize();
     }
 
@@ -568,8 +568,8 @@ class FnDeclNode extends DeclNode {
 
         else { // add function name to local symbol table
             try {
-                int totalFormalsOffsetSize = computeOffsetFromFormals();
-                int totalLocalsOffsetSize = computeOffsetFromLocals();
+                int totalFormalsOffsetSize = totalFormalsOffsetSize();
+                int totalLocalsOffsetSize = totalLocalsOffsetSize();
                 sym = new FnSym(myType.type(), myFormalsList.length(), totalFormalsOffsetSize, totalLocalsOffsetSize);
                 symTab.addDecl(name, sym);
                 myId.link(sym);
