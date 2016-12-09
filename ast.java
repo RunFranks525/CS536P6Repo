@@ -2066,6 +2066,11 @@ class UnaryMinusNode extends UnaryExpNode {
 
     public void codeGen(){
 	//TODO: generate code to multiply register represented by Exp by -1
+	myExp.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.generate("not", Codegen.T0, Codegen.T0); //negate
+	Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //add one
+	Codegen.push(Codegen.T0); // push result to stack
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2102,6 +2107,10 @@ class NotNode extends UnaryExpNode {
 
     public void codeGen(){
 	//TODO: generate code to do NOT on reg represented by Exp
+	myExp.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.generate("not", Codegen.T0, Codegen.T0); //
+	Codegen.push(Codegen.T0); // push result to stack
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2297,6 +2306,12 @@ class PlusNode extends ArithmeticExpNode {
 
     public void codeGen(){
 	//TODO: generate code to ADD the regs together and store in a temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.generate("addu", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2315,6 +2330,12 @@ class MinusNode extends ArithmeticExpNode {
 
     public void codeGen(){
 	//TODO: generate code to SUB the regs together and store in a temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.generate("subu", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2334,6 +2355,12 @@ class TimesNode extends ArithmeticExpNode {
 
     public void codeGen(){
 	//TODO: generate code to MULT the regs together and then store the result from Hi reg in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2352,6 +2379,12 @@ class DivideNode extends ArithmeticExpNode {
 
     public void codeGen(){
 	//TODO: generate code to DIV the regs together and then store the result from Hi reg in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2370,6 +2403,12 @@ class AndNode extends LogicalExpNode {
 
     public void codeGen(){
 	//TODO: generate code to ADD the regs together and then store the result in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.generate("and", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if (myExp1 && myExp2) == 1
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2388,6 +2427,12 @@ class OrNode extends LogicalExpNode {
 
     public void codeGen(){
 	//TODO: generate code to OR the regs together and then store the result in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.generate("or", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if (myExp1 || myExp2) == 1
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2406,6 +2451,12 @@ class EqualsNode extends EqualityExpNode {
 
     public void codeGen(){
 	//TODO: generate code to compare regs together and then store the result in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2424,6 +2475,12 @@ class NotEqualsNode extends EqualityExpNode {
 
     public void codeGen(){
 	//TODO: generate code to compare the regs together and then store the result in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2442,6 +2499,12 @@ class LessNode extends RelationalExpNode {
 
     public void codeGen(){
 	//TODO: generate code to compare the regs together and then store the result in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2460,6 +2523,12 @@ class GreaterNode extends RelationalExpNode {
 
     public void codeGen(){
 	//TODO: generate code to compare the regs together and then store the result in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2478,6 +2547,12 @@ class LessEqNode extends RelationalExpNode {
 
     public void codeGen(){
 	//TODO: generate code to compare the regs together and then store the result in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
 
@@ -2496,5 +2571,11 @@ class GreaterEqNode extends RelationalExpNode {
 
     public void codeGen(){
 	//TODO: generate code to compare the regs together and then store the result in temp reg
+	myExp1.codeGen(); // will push result to stack
+	myExp2.codeGen(); // will push result to stack
+	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
+	Codegen.push(Codegen.T0); // push result to stack
     }
 }
