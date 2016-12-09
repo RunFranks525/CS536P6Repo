@@ -305,16 +305,12 @@ class FnBodyNode extends ASTnode {
     }
 
     public int totalLocalsOffsetSize(){
-      return myDeclList.totalOffsetSize();
+      return myDeclList.getOffsetSize();
     }
 
     public void unparse(PrintWriter p, int indent) {
         myDeclList.unparse(p, indent);
         myStmtList.unparse(p, indent);
-    }
-
-    public void codeGen(){
-
     }
 
     // 2 kids
@@ -351,10 +347,6 @@ class StmtListNode extends ASTnode {
         while (it.hasNext()) {
             it.next().unparse(p, indent);
         }
-    }
-
-    public void codeGen() {
-
     }
 
     // list of kids (StmtNodes)
@@ -428,9 +420,10 @@ abstract class DeclNode extends ASTnode {
      * Note: a formal decl needs to return a sym
      */
     abstract public SemSym nameAnalysis(SymTable symTab);
-    public void codeGen() { }
 
-    public int getOffsetSize(){ return 0; }
+    public int getOffsetSize(){
+      return 0;
+    }
 
     // default version of typeCheck for non-function decls
     public void typeCheck() { }
@@ -575,8 +568,8 @@ class FnDeclNode extends DeclNode {
 
         else { // add function name to local symbol table
             try {
-                int totalFormalsOffsetSize = computeOffsetFromFormals();
-                int totalLocalsOffsetSize = computeOffsetFromLocals();
+                int totalFormalsOffsetSize = totalFormalsOffsetSize();
+                int totalLocalsOffsetSize = totalLocalsOffsetSize();
                 sym = new FnSym(myType.type(), myFormalsList.length(), totalFormalsOffsetSize, totalLocalsOffsetSize);
                 symTab.addDecl(name, sym);
                 myId.link(sym);
@@ -620,41 +613,10 @@ class FnDeclNode extends DeclNode {
       return myBody.totalLocalsOffsetSize();
     }
 
-    private void genFnPreamble() {
- 	Codegen.p.println(".text");
-	if(myId.name().equals("main")){
-		Codegen.p.println(".globl main");
-	}
-	Codegen.genLabel(myId.name(), "function decl for " + myId.name());
-    }
-
-    private void genFnPrologue() {
-	//TODO: do fn prologue
-	Codegen.genPush(Codegen.RA);
-	Codegen.genPush(Codegen.FP);
-	//make space for locals (and params?)
-	Codegen.p.println("#### Need to make space for locals (and params?)");
-	int totalOffset = computeOffsetFromLocals(); // + computeOffsetFromFormals();
-	//update the frame pointer
-	Codegen.generate("addu", Codegen.FP, Codegen.SP, totalOffset);
-    }
-
-    private void genFnBody() {
-	myBody.codeGen();
-    }
-
-    private void genFnEpilogue() {
-	 //TODO: do fn epilogue
-	 Codegen.genPop(Codegen.RA);
-         Codegen.genPop(Codegen.FP);
-	 Codegen.genPop(Codegen.SP);
-    }
-
     public void codeGen(){
-	genFnPreamble();
-	genFnPrologue();
-	//genFnBody();
-	//genFnEpilogue();	
+	       //TODO: do fn prologue
+	      myBody.codeGen();
+	       //TODO: do fn epilogue
     }
 
     /**
@@ -1265,8 +1227,8 @@ class IfElseStmtNode extends StmtNode {
 
     public void codeGen(){
 	//TODO: generate code to place boolean values into a register
-	myThenDeclList.codeGen();
-	myThenStmtList.codeGen();
+	myIfDeclList.codeGen();
+	myIfStmtList.codeGen();
 	//TODO: generate code for conditional branch
 	//TODO: generate code for the statements below the else
 	myElseDeclList.codeGen();
@@ -1474,7 +1436,7 @@ abstract class ExpNode extends ASTnode {
     abstract public Type typeCheck();
     abstract public int lineNum();
     abstract public int charNum();
-    abstract public void codeGen();
+    abstract public int codeGen();
 }
 
 class IntLitNode extends ExpNode {
@@ -2544,10 +2506,7 @@ class EqualsNode extends EqualityExpNode {
 	myExp2.codeGen(); // will push result to stack
 	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
-	Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
-	Codegen.generate("beq", Codegen.T0, Codegen.T1, "PUSH"); //push if equal
-	Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
-	Codegen.genLabel("PUSH");
+	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
 	Codegen.push(Codegen.T0); // push result to stack
     }
 }
@@ -2571,9 +2530,10 @@ class NotEqualsNode extends EqualityExpNode {
 	myExp2.codeGen(); // will push result to stack
 	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
-	Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
-	Codegen.generate("bne", Codegen.T0, Codegen.T1, "PUSH"); //push if not equal
-	Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
+	Codegen.generate("li", Codegen.T0, 1);
+	Codegen.generate("bne", Codegen.T0, Codegen.T1, "PUSH");
+	Codegen.generate("li", Codegen.T0, 0);
+	//TODO: generate labels for NotEQ and EQ
 	Codegen.genLabel("PUSH");
 	Codegen.push(Codegen.T0); // push result to stack
     }
