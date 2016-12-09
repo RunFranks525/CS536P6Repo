@@ -172,10 +172,18 @@ class DeclListNode extends ASTnode {
         nameAnalysis(symTab, symTab);
     }
 
+    public int totalOffsetSize(){
+      int totalOffsetSize = 0;
+      for(DeclNode declNode : myDecls){
+        totalOffsetSize += declNode.getOffsetSize();
+      }
+      return totalOffsetSize;
+    }
+
     public void codeGen(){
-	for (DeclNode node : myDecls) {
-		node.codeGen();
-	}
+	     for (DeclNode node : myDecls) {
+		       node.codeGen();
+	      }
     }
 
     /**
@@ -242,6 +250,14 @@ class FormalsListNode extends ASTnode {
         return typeList;
     }
 
+    public int totalFormalsOffsetSize(){
+      int totalFormalOffsetSize = 0;
+      for(FormalDeclNode node : myFormals){
+        totalFormalOffsetSize += node.getOffsetSize();
+      }
+      return totalForma;OffsetSize;
+    }
+
     /**
      * Return the number of formals in this list.
      */
@@ -286,6 +302,10 @@ class FnBodyNode extends ASTnode {
      */
     public void typeCheck(Type retType) {
         myStmtList.typeCheck(retType);
+    }
+
+    public int computeOffsetFromLocals(){
+      return myDeclList.getOffsetSize();
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -401,6 +421,10 @@ abstract class DeclNode extends ASTnode {
      */
     abstract public SemSym nameAnalysis(SymTable symTab);
 
+    public int getOffsetSize(){
+      return 0;
+    }
+
     // default version of typeCheck for non-function decls
     public void typeCheck() { }
 }
@@ -489,6 +513,10 @@ class VarDeclNode extends DeclNode {
         return sym;
     }
 
+    public int getOffsetSize(){
+      return myId.sym().getSymOffsetSize();
+    }
+
     public void unparse(PrintWriter p, int indent) {
         doIndent(p, indent);
         myType.unparse(p, 0);
@@ -540,7 +568,9 @@ class FnDeclNode extends DeclNode {
 
         else { // add function name to local symbol table
             try {
-                sym = new FnSym(myType.type(), myFormalsList.length());
+                int totalFormalsOffsetSize = computeOffsetFromFormals();
+                int totalLocalsOffsetSize = computeOffsetFromLocals();
+                sym = new FnSym(myType.type(), myFormalsList.length(), totalFormalsOffsetSize, totalLocalsOffsetSize);
                 symTab.addDecl(name, sym);
                 myId.link(sym);
             } catch (DuplicateSymException ex) {
@@ -575,10 +605,18 @@ class FnDeclNode extends DeclNode {
         return null;
     }
 
+    private int computeOffsetFromFormals(){
+      return myFormalsList.totalFormalsOffsetSize();
+    }
+
+    private int computeOffsetFromLocals(){
+      return myBody.totalLocalsOffsetSize();
+    }
+
     public void codeGen(){
-	//TODO: do fn prologue
-	myBody.codeGen();
-	//TODO: do fn epilogue
+	       //TODO: do fn prologue
+	      myBody.codeGen();
+	       //TODO: do fn epilogue
     }
 
     /**
@@ -661,6 +699,10 @@ class FormalDeclNode extends DeclNode {
         myType.unparse(p, 0);
         p.print(" ");
         p.print(myId.name());
+    }
+
+    public int getOffsetSize(){
+      return myId.sym().getSymOffsetSize();
     }
 
     // 2 kids
@@ -992,8 +1034,11 @@ class ReadStmtNode extends StmtNode {
 }
 
 class WriteStmtNode extends StmtNode {
+    private Type typeOfExp;
+
     public WriteStmtNode(ExpNode exp) {
         myExp = exp;
+        typeOfExp = null;
     }
 
     /**
@@ -1029,6 +1074,8 @@ class WriteStmtNode extends StmtNode {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
                          "Attempt to write void");
         }
+
+        this.typeOfExp = type;
     }
 
 
@@ -1096,7 +1143,7 @@ class IfStmtNode extends StmtNode {
 	myStmtList.codeGen();
 	//TODO: generate code to place boolean values into a register
 	//TODO: generate code for conditional branch
-	
+
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1260,7 +1307,7 @@ class WhileStmtNode extends StmtNode {
 	//TODO: generate code to place boolean values into a register
 	//TODO: generate code for conditional branch
 	myDeclList.codeGen();
-	myStmtList.codeGen();	
+	myStmtList.codeGen();
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1301,7 +1348,7 @@ class CallStmtNode extends StmtNode {
     }
 
     public void codeGen(){
-	myCall.codeGen();	
+	myCall.codeGen();
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1358,7 +1405,7 @@ class ReturnStmtNode extends StmtNode {
 
 
     public void codeGen(){
-	
+
 	//TODO: generate code to pop the return address (for PC) from stack
     }
 
@@ -1422,7 +1469,7 @@ class IntLitNode extends ExpNode {
 
 
     public void codeGen(){
-	
+
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1463,7 +1510,7 @@ class StringLitNode extends ExpNode {
     }
 
     public void codeGen(){
-	
+
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1503,7 +1550,7 @@ class TrueNode extends ExpNode {
     }
 
     public void codeGen(){
-	
+
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1543,7 +1590,7 @@ class FalseNode extends ExpNode {
 
 
     public void codeGen(){
-	
+
     }
     public void unparse(PrintWriter p, int indent) {
         p.print("false");
@@ -1625,7 +1672,7 @@ class IdNode extends ExpNode {
     }
 
     public void codeGen(){
-	
+
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1977,7 +2024,7 @@ abstract class UnaryExpNode extends ExpNode {
     public int charNum() {
         return myExp.charNum();
     }
- 
+
     public void codeGen(){
 
     }
