@@ -45,7 +45,7 @@ class FnSym extends SemSym {
     public FnSym(Type type, int numparams, int formalsOffsetSize, int localsOffsetSize) {
         super(new FnType());
         returnType = type;
-        numParams = numparams
+        numParams = numparams;
         this.formalsOffsetSize = formalsOffsetSize;
         this.localsOffsetSize = localsOffsetSize;
     }

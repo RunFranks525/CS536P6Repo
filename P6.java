@@ -12,7 +12,7 @@ import java_cup.runtime.*;
  * The program opens the two files, creates a scanner and a parser, and
  * calls the parser.  If the parse is successful, the AST is unparsed.
  */
-public class P5 {
+public class P6 {
 	FileReader inFile;
 	private PrintWriter outFile;
 	private static PrintStream outStream = System.err;
@@ -23,20 +23,20 @@ public class P5 {
 	public static final int RESULT_OTHER_ERROR = -1;
 
 	/**
-	 * P5 constructor for client programs and testers. Note that
+	 * P6 constructor for client programs and testers. Note that
 	 * users MUST invoke {@link setInfile} and {@link setOutfile}
 	 */
-	public P5(){
+	public P6(){
 	}
 	
 	/**
-	 * If we are directly invoking P5 from the command line, this
+	 * If we are directly invoking P6 from the command line, this
 	 * is the command line to use. It shouldn't be invoked from
 	 * outside the class (hence the private constructor) because
 	 * it 
 	 * @param args command line args array for [<infile> <outfile>]
 	 */
-	private P5(String[] args){
+	private P6(String[] args){
     	//Parse arguments    	
         if (args.length < 2) {
         	String msg = "please supply name of file to be parsed"
@@ -139,15 +139,15 @@ public class P5 {
 		
 		ProgramNode astRoot = (ProgramNode)cfgRoot.value; 
 		if (ErrMsg.getErr()) {  
-			return P5.RESULT_SYNTAX_ERROR;
+			return P6.RESULT_SYNTAX_ERROR;
 		}
 		
 		astRoot.nameAnalysis();  // perform name analysis
 		
 		astRoot.typeCheck();
 		
-		astRoot.unparse(outFile, 0);
-		return P5.RESULT_CORRECT;
+		astRoot.codeGen();
+		return P6.RESULT_CORRECT;
 	}
 	
 	public void run(){
@@ -198,7 +198,15 @@ public class P5 {
 	}
 	
     public static void main(String[] args){
-    	P5 instance = new P5(args);
-    	instance.run();
+    	P6 instance = new P6(args);
+	try {
+		Codegen.p = new PrintWriter(args[1]);
+	    	instance.run();
+		Codegen.p.close();
+	} catch(FileNotFoundException ex) {
+		System.out.println("Problem opening file to write to");
+		System.exit(1);
+	}
+
     }
 }

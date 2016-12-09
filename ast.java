@@ -305,12 +305,16 @@ class FnBodyNode extends ASTnode {
     }
 
     public int totalLocalsOffsetSize(){
-      return myDeclList.getOffsetSize();
+      return myDeclList.totalOffsetSize();
     }
 
     public void unparse(PrintWriter p, int indent) {
         myDeclList.unparse(p, indent);
         myStmtList.unparse(p, indent);
+    }
+
+    public void codeGen(){
+
     }
 
     // 2 kids
@@ -347,6 +351,10 @@ class StmtListNode extends ASTnode {
         while (it.hasNext()) {
             it.next().unparse(p, indent);
         }
+    }
+
+    public void codeGen() {
+
     }
 
     // list of kids (StmtNodes)
@@ -420,10 +428,9 @@ abstract class DeclNode extends ASTnode {
      * Note: a formal decl needs to return a sym
      */
     abstract public SemSym nameAnalysis(SymTable symTab);
+    public void codeGen() { }
 
-    public int getOffsetSize(){
-      return 0;
-    }
+    public int getOffsetSize(){ return 0; }
 
     // default version of typeCheck for non-function decls
     public void typeCheck() { }
@@ -568,8 +575,8 @@ class FnDeclNode extends DeclNode {
 
         else { // add function name to local symbol table
             try {
-                int totalFormalsOffsetSize = totalFormalsOffsetSize();
-                int totalLocalsOffsetSize = totalLocalsOffsetSize();
+                int totalFormalsOffsetSize = computeOffsetFromFormals();
+                int totalLocalsOffsetSize = computeOffsetFromLocals();
                 sym = new FnSym(myType.type(), myFormalsList.length(), totalFormalsOffsetSize, totalLocalsOffsetSize);
                 symTab.addDecl(name, sym);
                 myId.link(sym);
@@ -613,10 +620,41 @@ class FnDeclNode extends DeclNode {
       return myBody.totalLocalsOffsetSize();
     }
 
+    private void genFnPreamble() {
+ 	Codegen.p.println(".text");
+	if(myId.name().equals("main")){
+		Codegen.p.println(".globl main");
+	}
+	Codegen.genLabel(myId.name(), "function decl for " + myId.name());
+    }
+
+    private void genFnPrologue() {
+	//TODO: do fn prologue
+	Codegen.genPush(Codegen.RA);
+	Codegen.genPush(Codegen.FP);
+	//make space for locals (and params?)
+	Codegen.p.println("#### Need to make space for locals (and params?)");
+	int totalOffset = computeOffsetFromLocals(); // + computeOffsetFromFormals();
+	//update the frame pointer
+	Codegen.generate("addu", Codegen.FP, Codegen.SP, totalOffset);
+    }
+
+    private void genFnBody() {
+	myBody.codeGen();
+    }
+
+    private void genFnEpilogue() {
+	 //TODO: do fn epilogue
+	 Codegen.genPop(Codegen.RA);
+         Codegen.genPop(Codegen.FP);
+	 Codegen.genPop(Codegen.SP);
+    }
+
     public void codeGen(){
-	       //TODO: do fn prologue
-	      myBody.codeGen();
-	       //TODO: do fn epilogue
+	genFnPreamble();
+	genFnPrologue();
+	//genFnBody();
+	//genFnEpilogue();	
     }
 
     /**
@@ -1227,8 +1265,8 @@ class IfElseStmtNode extends StmtNode {
 
     public void codeGen(){
 	//TODO: generate code to place boolean values into a register
-	myIfDeclList.codeGen();
-	myIfStmtList.codeGen();
+	myThenDeclList.codeGen();
+	myThenStmtList.codeGen();
 	//TODO: generate code for conditional branch
 	//TODO: generate code for the statements below the else
 	myElseDeclList.codeGen();
@@ -1436,7 +1474,7 @@ abstract class ExpNode extends ASTnode {
     abstract public Type typeCheck();
     abstract public int lineNum();
     abstract public int charNum();
-    abstract public int codeGen();
+    abstract public void codeGen();
 }
 
 class IntLitNode extends ExpNode {
