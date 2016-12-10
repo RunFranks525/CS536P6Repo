@@ -1,110 +1,6 @@
 import java.io.*;
 import java.util.*;
 
-// **********************************************************************
-// The ASTnode class defines the nodes of the abstract-syntax tree that
-// represents a Mini program.
-//
-// Internal nodes of the tree contain pointers to children, organized
-// either in a list (for nodes that may have a variable number of
-// children) or as a fixed set of fields.
-//
-// The nodes for literals and ids contain line and character number
-// information; for string literals and identifiers, they also contain a
-// string; for integer literals, they also contain an integer value.
-//
-// Here are all the different kinds of AST nodes and what kinds of children
-// they have.  All of these kinds of AST nodes are subclasses of "ASTnode".
-// Indentation indicates further subclassing:
-//
-//     Subclass            Kids
-//     --------            ----
-//     ProgramNode         DeclListNode
-//     DeclListNode        linked list of DeclNode
-//     DeclNode:
-//       VarDeclNode       TypeNode, IdNode, int
-//       FnDeclNode        TypeNode, IdNode, FormalsListNode, FnBodyNode
-//       FormalDeclNode    TypeNode, IdNode
-//       StructDeclNode    IdNode, DeclListNode
-//
-//     FormalsListNode     linked list of FormalDeclNode
-//     FnBodyNode          DeclListNode, StmtListNode
-//     StmtListNode        linked list of StmtNode
-//     ExpListNode         linked list of ExpNode
-//
-//     TypeNode:
-//       IntNode           -- none --
-//       BoolNode          -- none --
-//       VoidNode          -- none --
-//       StructNode        IdNode
-//
-//     StmtNode:
-//       AssignStmtNode      AssignNode
-//       PostIncStmtNode     ExpNode
-//       PostDecStmtNode     ExpNode
-//       ReadStmtNode        ExpNode
-//       WriteStmtNode       ExpNode
-//       IfStmtNode          ExpNode, DeclListNode, StmtListNode
-//       IfElseStmtNode      ExpNode, DeclListNode, StmtListNode,
-//                                    DeclListNode, StmtListNode
-//       WhileStmtNode       ExpNode, DeclListNode, StmtListNode
-//       CallStmtNode        CallExpNode
-//       ReturnStmtNode      ExpNode
-//
-//     ExpNode:
-//       IntLitNode          -- none --
-//       StrLitNode          -- none --
-//       TrueNode            -- none --
-//       FalseNode           -- none --
-//       IdNode              -- none --
-//       DotAccessNode       ExpNode, IdNode
-//       AssignNode          ExpNode, ExpNode
-//       CallExpNode         IdNode, ExpListNode
-//       UnaryExpNode        ExpNode
-//         UnaryMinusNode
-//         NotNode
-//       BinaryExpNode       ExpNode ExpNode
-//         PlusNode
-//         MinusNode
-//         TimesNode
-//         DivideNode
-//         AndNode
-//         OrNode
-//         EqualsNode
-//         NotEqualsNode
-//         LessNode
-//         GreaterNode
-//         LessEqNode
-//         GreaterEqNode
-//
-// Here are the different kinds of AST nodes again, organized according to
-// whether they are leaves, internal nodes with linked lists of kids, or
-// internal nodes with a fixed number of kids:
-//
-// (1) Leaf nodes:
-//        IntNode,   BoolNode,  VoidNode,  IntLitNode,  StrLitNode,
-//        TrueNode,  FalseNode, IdNode
-//
-// (2) Internal nodes with (possibly empty) linked lists of children:
-//        DeclListNode, FormalsListNode, StmtListNode, ExpListNode
-//
-// (3) Internal nodes with fixed numbers of kids:
-//        ProgramNode,     VarDeclNode,     FnDeclNode,     FormalDeclNode,
-//        StructDeclNode,  FnBodyNode,      StructNode,     AssignStmtNode,
-//        PostIncStmtNode, PostDecStmtNode, ReadStmtNode,   WriteStmtNode
-//        IfStmtNode,      IfElseStmtNode,  WhileStmtNode,  CallStmtNode
-//        ReturnStmtNode,  DotAccessNode,   AssignExpNode,  CallExpNode,
-//        UnaryExpNode,    BinaryExpNode,   UnaryMinusNode, NotNode,
-//        PlusNode,        MinusNode,       TimesNode,      DivideNode,
-//        AndNode,         OrNode,          EqualsNode,     NotEqualsNode,
-//        LessNode,        GreaterNode,     LessEqNode,     GreaterEqNode
-//
-// **********************************************************************
-
-// **********************************************************************
-// ASTnode class (base class for all other kinds of nodes)
-// **********************************************************************
-
 abstract class ASTnode {
     // every subclass must provide an unparse operation
     abstract public void unparse(PrintWriter p, int indent);
@@ -193,6 +89,7 @@ class DeclListNode extends ASTnode {
      * decls in the list.
      */
     public void nameAnalysis(SymTable symTab, SymTable globalTab) {
+      	System.out.println("DeclListSize: " + myDecls.size());
         for (DeclNode node : myDecls) {
             if (node instanceof VarDeclNode) {
                 ((VarDeclNode)node).nameAnalysis(symTab, globalTab);
@@ -241,6 +138,7 @@ class FormalsListNode extends ASTnode {
      */
     public List<Type> nameAnalysis(SymTable symTab) {
         List<Type> typeList = new LinkedList<Type>();
+	System.out.println(length());
         for (FormalDeclNode node : myFormals) {
             SemSym sym = node.nameAnalysis(symTab);
             if (sym != null) {
@@ -314,7 +212,7 @@ class FnBodyNode extends ASTnode {
     }
 
     public void codeGen(){
-
+	myStmtList.codeGen();
     }
 
     // 2 kids
@@ -354,7 +252,9 @@ class StmtListNode extends ASTnode {
     }
 
     public void codeGen() {
-
+	for(StmtNode node : myStmts) {
+	     node.codeGen();
+	}
     }
 
     // list of kids (StmtNodes)
@@ -467,7 +367,7 @@ class VarDeclNode extends DeclNode {
         String name = myId.name();
         SemSym sym = null;
         IdNode structId = null;
-
+	System.out.println("Here");
         if (myType instanceof VoidNode) {  // check for void type
             ErrMsg.fatal(myId.lineNum(), myId.charNum(),
                          "Non-function declared void");
@@ -502,7 +402,7 @@ class VarDeclNode extends DeclNode {
                     sym = new StructSym(structId);
                 }
                 else {
-                    sym = new SemSym(myType.type());
+                    sym = new SemSym(myType.type(), 4);
                 }
                 symTab.addDecl(name, sym);
                 myId.link(sym);
@@ -575,9 +475,7 @@ class FnDeclNode extends DeclNode {
 
         else { // add function name to local symbol table
             try {
-                int totalFormalsOffsetSize = computeOffsetFromFormals();
-                int totalLocalsOffsetSize = computeOffsetFromLocals();
-                sym = new FnSym(myType.type(), myFormalsList.length(), totalFormalsOffsetSize, totalLocalsOffsetSize);
+                sym = new FnSym(myType.type(), myFormalsList.length());
                 symTab.addDecl(name, sym);
                 myId.link(sym);
             } catch (DuplicateSymException ex) {
@@ -595,13 +493,21 @@ class FnDeclNode extends DeclNode {
 
         // process the formals
         List<Type> typeList = myFormalsList.nameAnalysis(symTab);
-        if (sym != null) {
+	int totalFormalsOffsetSize = computeOffsetFromFormals();
+
+	//build up offsets
+	System.out.println("Params offset for: " + totalFormalsOffsetSize);
+	sym.setFormalsOffsetSize(totalFormalsOffsetSize);
+	if (sym != null) {
             sym.addFormals(typeList);
         }
 
+	System.out.println("About to do name analysis on body");
         myBody.nameAnalysis(symTab); // process the function body
+	int totalLocalsOffsetSize = computeOffsetFromLocals();
+        sym.setLocalsOffsetSize(totalLocalsOffsetSize);
 
-        try {
+	try {
             symTab.removeScope();  // exit scope
         } catch (EmptySymTableException ex) {
             System.err.println("Unexpected EmptySymTableException " +
@@ -629,14 +535,12 @@ class FnDeclNode extends DeclNode {
     }
 
     private void genFnPrologue() {
-	//TODO: do fn prologue
 	Codegen.genPush(Codegen.RA);
 	Codegen.genPush(Codegen.FP);
-	//make space for locals (and params?)
-	Codegen.p.println("#### Need to make space for locals (and params?)");
-	int totalOffset = computeOffsetFromLocals(); // + computeOffsetFromFormals();
-	//update the frame pointer
-	Codegen.generate("addu", Codegen.FP, Codegen.SP, totalOffset);
+	int totalParamsOffset = computeOffsetFromFormals(); 
+	int totalLocalsOffset = computeOffsetFromLocals();
+	Codegen.generate("addu", Codegen.FP, Codegen.SP, totalParamsOffset + 8); //size of params + 8
+    	Codegen.generate("subu", Codegen.SP, Codegen.SP, totalLocalsOffset);
     }
 
     private void genFnBody() {
@@ -644,17 +548,24 @@ class FnDeclNode extends DeclNode {
     }
 
     private void genFnEpilogue() {
-	 //TODO: do fn epilogue
-	 Codegen.genPop(Codegen.RA);
-         Codegen.genPop(Codegen.FP);
-	 Codegen.genPop(Codegen.SP);
+	 int totalParamsOffset = computeOffsetFromFormals();
+	 String loadString = "-" + totalParamsOffset + "(" + Codegen.FP + ")";
+	 String restoreString = "-" + (totalParamsOffset + 4) + "(" + Codegen.FP + ")";
+	 Codegen.generate("lw", Codegen.RA, loadString);
+	 Codegen.generate("move", Codegen.T0, Codegen.FP);
+	 Codegen.generate("lw", Codegen.FP, restoreString);
+	 Codegen.generate("move", Codegen.SP, Codegen.T0);
+	 Codegen.generate("jr", Codegen.RA);
     }
 
     public void codeGen(){
 	genFnPreamble();
+	Codegen.p.println();
 	genFnPrologue();
+	Codegen.p.println();
 	//genFnBody();
-	//genFnEpilogue();	
+	genFnEpilogue();
+	Codegen.p.println();	
     }
 
     /**
@@ -701,7 +612,6 @@ class FormalDeclNode extends DeclNode {
         String name = myId.name();
         boolean badDecl = false;
         SemSym sym = null;
-
         if (myType instanceof VoidNode) {
             ErrMsg.fatal(myId.lineNum(), myId.charNum(),
                          "Non-function declared void");
@@ -716,7 +626,7 @@ class FormalDeclNode extends DeclNode {
 
         if (!badDecl) {  // insert into symbol table
             try {
-                sym = new SemSym(myType.type());
+                sym = new SemSym(myType.type(), 4);
                 symTab.addDecl(name, sym);
                 myId.link(sym);
             } catch (DuplicateSymException ex) {
@@ -968,6 +878,7 @@ class PostIncStmtNode extends StmtNode {
 
     public void codeGen(){
 	//TODO: generate code to add 1 to the given variable
+	Codegen.genPush("1");
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2170,10 +2081,10 @@ class UnaryMinusNode extends UnaryExpNode {
     public void codeGen(){
 	//TODO: generate code to multiply register represented by Exp by -1
 	myExp.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("not", Codegen.T0, Codegen.T0); //negate
 	Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //add one
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2211,9 +2122,9 @@ class NotNode extends UnaryExpNode {
     public void codeGen(){
 	//TODO: generate code to do NOT on reg represented by Exp
 	myExp.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("not", Codegen.T0, Codegen.T0); //
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2411,10 +2322,10 @@ class PlusNode extends ArithmeticExpNode {
 	//TODO: generate code to ADD the regs together and store in a temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("addu", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if myExp1 >= myExp2
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2435,10 +2346,10 @@ class MinusNode extends ArithmeticExpNode {
 	//TODO: generate code to SUB the regs together and store in a temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("subu", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if myExp1 >= myExp2
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2460,10 +2371,10 @@ class TimesNode extends ArithmeticExpNode {
 	//TODO: generate code to MULT the regs together and then store the result from Hi reg in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2484,10 +2395,10 @@ class DivideNode extends ArithmeticExpNode {
 	//TODO: generate code to DIV the regs together and then store the result from Hi reg in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2508,10 +2419,10 @@ class AndNode extends LogicalExpNode {
 	//TODO: generate code to ADD the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("and", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if (myExp1 && myExp2) == 1
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2532,10 +2443,10 @@ class OrNode extends LogicalExpNode {
 	//TODO: generate code to OR the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("or", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if (myExp1 || myExp2) == 1
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2684,9 +2595,9 @@ class GreaterEqNode extends RelationalExpNode {
 	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }

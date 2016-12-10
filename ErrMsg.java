@@ -5,7 +5,7 @@
  */
 class ErrMsg {
 	private static boolean err = false;
-
+	
     /**
      * Generates a fatal error message.
      * @param lineNum line number for error location
@@ -13,7 +13,7 @@ class ErrMsg {
      * @param msg associated message for error
      */
     static void fatal(int lineNum, int charNum, String msg) {
-				err = true;
+		err = true;
         System.err.println(lineNum + ":" + charNum + " ***ERROR*** " + msg);
     }
 
@@ -26,7 +26,7 @@ class ErrMsg {
     static void warn(int lineNum, int charNum, String msg) {
         System.err.println(lineNum + ":" + charNum + " ***WARNING*** " + msg);
     }
-
+	
 	/**
 	 * Returns the err flag.
 	 */

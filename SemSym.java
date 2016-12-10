@@ -8,8 +8,9 @@ public class SemSym {
     private Type type;
     private int offset;
 
-    public SemSym(Type type) {
+    public SemSym(Type type, int offset) {
         this.type = type;
+	this.offset = offset;
     }
 
     public Type getType() {
@@ -42,16 +43,26 @@ class FnSym extends SemSym {
     private int formalsOffsetSize;
     private int localsOffsetSize;
 
-    public FnSym(Type type, int numparams, int formalsOffsetSize, int localsOffsetSize) {
-        super(new FnType());
+    public FnSym(Type type, int numparams) {
+        super(new FnType(), 0);
         returnType = type;
         numParams = numparams;
-        this.formalsOffsetSize = formalsOffsetSize;
-        this.localsOffsetSize = localsOffsetSize;
     }
 
     public void addFormals(List<Type> L) {
         paramTypes = L;
+    }
+
+    public void setFormalsOffsetSize(int value) {
+	formalsOffsetSize = value;
+    }
+
+    public int getFormalsOffsetSize() {
+	return this.formalsOffsetSize;
+    }
+
+    public void setLocalsOffsetSize(int value) {
+	localsOffsetSize = value;
     }
 
     public Type getReturnType() {
@@ -94,7 +105,7 @@ class StructSym extends SemSym {
     private IdNode structType;  // name of the struct type
 
     public StructSym(IdNode id) {
-        super(new StructType(id));
+        super(new StructType(id), 0);
         structType = id;
     }
 
@@ -114,7 +125,7 @@ class StructDefSym extends SemSym {
     private SymTable symTab;
 
     public StructDefSym(SymTable table) {
-        super(new StructDefType());
+        super(new StructDefType(), 0);
         symTab = table;
     }
 
