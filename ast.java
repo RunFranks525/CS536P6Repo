@@ -1118,7 +1118,11 @@ class WriteStmtNode extends StmtNode {
 
 
     public void codeGen(){
-	//TODO: generate code to store a word in memory
+	myExp.codeGen(); //result of Expr placed on top of stack
+	Codegen.genPop(Codegen.A0); //pop TOS into register $a0
+	Codegen.generate("li", Codegen.V0, 1); //set V0 to 1
+	Codegen.generate("syscall"); //says to do this in the notes
+	
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1177,10 +1181,12 @@ class IfStmtNode extends StmtNode {
 
 
     public void codeGen(){
-	myDeclList.codeGen();
+	myExp.codeGen(); //result goes to T0
+	Codegen.generate("li", Codegen.T1, 0);
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, "END"); //TODO: be more specific with END
+        myDeclList.codeGen();
 	myStmtList.codeGen();
-	//TODO: generate code to place boolean values into a register
-	//TODO: generate code for conditional branch
+	Codegen.genLabel("END"); //TODO: be more specific with END
 
     }
 
@@ -1264,13 +1270,16 @@ class IfElseStmtNode extends StmtNode {
 
 
     public void codeGen(){
-	//TODO: generate code to place boolean values into a register
-	myThenDeclList.codeGen();
+	myExp.codeGen();
+	Codegen.generate("li", Codegen.T1, 0);
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, "ELSE"); //TODO: be more specific with ELSE
+        myThenDeclList.codeGen();
 	myThenStmtList.codeGen();
-	//TODO: generate code for conditional branch
-	//TODO: generate code for the statements below the else
+	Codegen.generate("j", "END"); //TODO: be more specific with END
+	Codegen.genLabel("ELSE"); //TODO: be more specific with ELSE
 	myElseDeclList.codeGen();
 	myElseStmtList.codeGen();
+	Codegen.genLabel("END"); //TODO: be more specific with END
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1342,10 +1351,14 @@ class WhileStmtNode extends StmtNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to place boolean values into a register
-	//TODO: generate code for conditional branch
+	Codegen.genLabel("WHILE"); //TODO: be more specific with WHILE
+	myExp.codeGen(); // result is placed in T0
+	Codegen.generate("li", Codegen.T1, 0);
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, "END"); //TODO: be more specific with END
 	myDeclList.codeGen();
 	myStmtList.codeGen();
+	Codegen.generate("j", "WHILE");//TODO: be more specific with WHILE
+	Codegen.genLabel("END"); //TODO: be more specific with END
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1443,7 +1456,8 @@ class ReturnStmtNode extends StmtNode {
 
 
     public void codeGen(){
-
+	myExp.codeGen(); //Places result into T0
+	Codegen.generate("addi", Codegen.V0, Codegen.T0, 0);
 	//TODO: generate code to pop the return address (for PC) from stack
     }
 
@@ -1549,7 +1563,7 @@ class StringLitNode extends ExpNode {
     }
 
     public void codeGen(){
-
+	//???????
     }
 
     public void unparse(PrintWriter p, int indent) {
