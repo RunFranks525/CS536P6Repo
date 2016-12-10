@@ -1433,7 +1433,7 @@ class IntLitNode extends ExpNode {
 
     public void codeGen(){
 	Codegen.generate("li", Codegen.T0, myIntVal);
-	Codegen.push(Codegen.T0);
+	Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1515,7 +1515,7 @@ class TrueNode extends ExpNode {
 
     public void codeGen(){
 	Codegen.generate("li", Codegen.T0, 1);
-	Codegen.push(Codegen.T0);
+	Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1556,7 +1556,7 @@ class FalseNode extends ExpNode {
 
     public void codeGen(){
 	Codegen.generate("li", Codegen.T0, 0);
-	Codegen.push(Codegen.T0);
+	Codegen.genPush(Codegen.T0);
 
     }
     public void unparse(PrintWriter p, int indent) {
@@ -2467,13 +2467,13 @@ class EqualsNode extends EqualityExpNode {
 	//TODO: generate code to compare regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
 	Codegen.generate("beq", Codegen.T0, Codegen.T1, "PUSH"); //push if equal
 	Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
 	Codegen.genLabel("PUSH");
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2494,13 +2494,13 @@ class NotEqualsNode extends EqualityExpNode {
 	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
 	Codegen.generate("bne", Codegen.T0, Codegen.T1, "PUSH"); //push if not equal
 	Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
 	Codegen.genLabel("PUSH");
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2521,10 +2521,10 @@ class LessNode extends RelationalExpNode {
 	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("slt", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if myExp1 < myExp2
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2545,11 +2545,11 @@ class GreaterNode extends RelationalExpNode {
 	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("addu", Codegen.T0, Codegen.T0, 1);
 	Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 > myExp2
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
@@ -2570,11 +2570,11 @@ class LessEqNode extends RelationalExpNode {
 	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
-	Codegen.pop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.pop(Codegen.T0); // pop myExp1 result into T0
+	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("addu", Codegen.T1, Codegen.T1, 1);
 	Codegen.generate("slt", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if myExp1 <= myExp2
-	Codegen.push(Codegen.T0); // push result to stack
+	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
 
