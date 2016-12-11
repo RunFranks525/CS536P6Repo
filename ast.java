@@ -1093,12 +1093,14 @@ class IfStmtNode extends StmtNode {
 
 
     public void codeGen(){
+	String labelStr = Codegen.nextLabel();
 	myExp.codeGen(); //result goes to T0
 	Codegen.generate("li", Codegen.T1, 0);
-	Codegen.generate("beq", Codegen.T0, Codegen.T1, "END"); //TODO: be more specific with END
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr);
         //myDeclList.codeGen();
+
 	myStmtList.codeGen();
-	Codegen.genLabel("END"); //TODO: be more specific with END
+	Codegen.genLabel(labelStr); 
 
     }
 
@@ -1182,16 +1184,18 @@ class IfElseStmtNode extends StmtNode {
 
 
     public void codeGen(){
+	String labelStr1 = Codegen.nextLabel();
+	String labelStr2 = Codegen.nextLabel();
 	myExp.codeGen();
 	Codegen.generate("li", Codegen.T1, 0);
-	Codegen.generate("beq", Codegen.T0, Codegen.T1, "ELSE"); //TODO: be more specific with ELSE
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr1); 
         myThenDeclList.codeGen();
 	myThenStmtList.codeGen();
-	Codegen.generate("j", "END"); //TODO: be more specific with END
-	Codegen.genLabel("ELSE"); //TODO: be more specific with ELSE
+	Codegen.generate("j", labelStr2); 
+	Codegen.genLabel(labelStr1); 
 	myElseDeclList.codeGen();
 	myElseStmtList.codeGen();
-	Codegen.genLabel("END"); //TODO: be more specific with END
+	Codegen.genLabel(labelStr2); 
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1263,14 +1267,16 @@ class WhileStmtNode extends StmtNode {
     }
 
     public void codeGen(){
-	Codegen.genLabel("WHILE"); //TODO: be more specific with WHILE
+	String labelStr1 = Codegen.nextLabel();
+	String lebalStr2 = Codegen.nextLabel();
+	Codegen.genLabel(labelStr1);
 	myExp.codeGen(); // result is placed in T0
 	Codegen.generate("li", Codegen.T1, 0);
-	Codegen.generate("beq", Codegen.T0, Codegen.T1, "END"); //TODO: be more specific with END
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr2);
 	myDeclList.codeGen();
 	myStmtList.codeGen();
-	Codegen.generate("j", "WHILE");//TODO: be more specific with WHILE
-	Codegen.genLabel("END"); //TODO: be more specific with END
+	Codegen.generate("j", labelStr1);
+	Codegen.genLabel(labelStr2);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1645,8 +1651,31 @@ class IdNode extends ExpNode {
         return null;
     }
 
+    public void genJumpAndLink(){
+	String jumpLabel = "_<" + myStrVal + ">";
+	Codegen.generate("jal", jumpLabel);
+    }
+
     public void codeGen(){
-	
+
+	if(mySym.isGlobal()){
+		Codegen.generate("lw", Codegen.T0, "_"+ myStrVal);
+	}
+	else{
+		Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, 0);
+	}
+	Codegen.genPush(Codegen.T0);
+    }
+
+    public void genAddr(){
+	if(mySym.isGlobal()){
+		Codegen.generate("la", Codegen.T0, "_"+ myStrVal);
+	}
+	else{
+		Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, -8);
+	}
+	Codegen.genPush(Codegen.T0);
+
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2477,15 +2506,16 @@ class EqualsNode extends EqualityExpNode {
     }
 
     public void codeGen(){
+	Srting labelStr = Codegen.nextLabel();
 	//TODO: generate code to compare regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
-	Codegen.generate("beq", Codegen.T0, Codegen.T1, "PUSH"); //push if equal
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr); //push if equal
 	Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
-	Codegen.genLabel("PUSH");
+	Codegen.genLabel(labelStr);
 	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
@@ -2504,15 +2534,16 @@ class NotEqualsNode extends EqualityExpNode {
     }
 
     public void codeGen(){
+	String labelStr = Codegen.nextLabel();
 	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 	Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
-	Codegen.generate("bne", Codegen.T0, Codegen.T1, "PUSH"); //push if not equal
+	Codegen.generate("bne", Codegen.T0, Codegen.T1, labelStr); //push if not equal
 	Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
-	Codegen.genLabel("PUSH");
+	Codegen.genLabel(labelStr);
 	Codegen.genPush(Codegen.T0); // push result to stack
     }
 }
