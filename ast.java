@@ -367,7 +367,6 @@ class VarDeclNode extends DeclNode {
         String name = myId.name();
         SemSym sym = null;
         IdNode structId = null;
-	System.out.println("Here");
         if (myType instanceof VoidNode) {  // check for void type
             ErrMsg.fatal(myId.lineNum(), myId.charNum(),
                          "Non-function declared void");
@@ -418,6 +417,14 @@ class VarDeclNode extends DeclNode {
         }
 
         return sym;
+    }
+
+    public void codeGen() {
+	String offset = "4";
+	Codegen.generate(".data");
+	Codegen.generate(".align 2");
+	Codegen.p.print(myId.name() + ":");
+	Codegen.p.print("\t.space " + offset);
     }
 
     public int getOffsetSize(){

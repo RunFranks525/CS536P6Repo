@@ -1,7 +1,9 @@
+int helloT;
+int a;
+int b;
+int c;
+
 void main() {
- int a;
 }
 
-int f(int a, int b) {
-	cout << "Hello Mom";
-}
+
