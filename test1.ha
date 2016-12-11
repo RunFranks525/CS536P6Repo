@@ -3,5 +3,5 @@ void main() {
 }
 
 int f(int a, int b) {
-	int c;
+	cout << "Hello Mom";
 }

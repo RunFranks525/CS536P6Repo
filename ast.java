@@ -563,7 +563,8 @@ class FnDeclNode extends DeclNode {
 	Codegen.p.println();
 	genFnPrologue();
 	Codegen.p.println();
-	//genFnBody();
+	genFnBody();
+	Codegen.p.println();
 	genFnEpilogue();
 	Codegen.p.println();	
     }
@@ -878,7 +879,7 @@ class PostIncStmtNode extends StmtNode {
 
     public void codeGen(){
 	//TODO: generate code to add 1 to the given variable
-	Codegen.genPush("1");
+	myExp.codeGen();
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1095,7 +1096,7 @@ class IfStmtNode extends StmtNode {
 	myExp.codeGen(); //result goes to T0
 	Codegen.generate("li", Codegen.T1, 0);
 	Codegen.generate("beq", Codegen.T0, Codegen.T1, "END"); //TODO: be more specific with END
-        myDeclList.codeGen();
+        //myDeclList.codeGen();
 	myStmtList.codeGen();
 	Codegen.genLabel("END"); //TODO: be more specific with END
 
@@ -1432,6 +1433,7 @@ class IntLitNode extends ExpNode {
 
 
     public void codeGen(){
+
 	Codegen.generate("li", Codegen.T0, myIntVal);
 	Codegen.genPush(Codegen.T0);
     }
@@ -1474,7 +1476,12 @@ class StringLitNode extends ExpNode {
     }
 
     public void codeGen(){
-	//???????
+	Codegen.generate(".data");
+	String label = Codegen.nextLabel();
+	Codegen.generateLabeled(label, ".asciiz", "", myStrVal);
+	Codegen.generate(".text");
+	Codegen.generate("la", Codegen.T0, label);
+	Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1639,7 +1646,7 @@ class IdNode extends ExpNode {
     }
 
     public void codeGen(){
-
+	
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1873,6 +1880,12 @@ class AssignNode extends ExpNode {
 
     public void codeGen(){
 	//TODO: generate code to store the result of one Exp in the register for another Exp
+	//1. Eval the RHS expression, leaving the value on the stack
+	myExp.codeGen();
+	//2. Push the address of the LHS ID onto the stack
+	myLHS.genAddr();
+	//3. Store the value into the address
+	//4. Leave a copy of the value on the stack
     }
 
     public void unparse(PrintWriter p, int indent) {
