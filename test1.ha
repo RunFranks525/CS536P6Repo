@@ -4,6 +4,8 @@ int b;
 int c;
 
 void main() {
+	int anInt;
+	anInt = 5;
 }
 
 

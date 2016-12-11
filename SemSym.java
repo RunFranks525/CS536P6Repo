@@ -7,10 +7,20 @@ import java.util.*;
 public class SemSym {
     private Type type;
     private int offset;
+    private boolean isGlobal;
 
     public SemSym(Type type, int offset) {
         this.type = type;
 	this.offset = offset;
+	this.isGlobal = false;
+    }
+
+    public void setIsGlobal(boolean isGlobal) {
+	this.isGlobal = isGlobal;
+    }
+
+    public boolean isGlobal() {
+	return this.isGlobal;
     }
 
     public Type getType() {

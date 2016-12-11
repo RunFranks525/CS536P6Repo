@@ -425,6 +425,7 @@ class VarDeclNode extends DeclNode {
 	Codegen.generate(".align 2");
 	Codegen.p.print(myId.name() + ":");
 	Codegen.p.print("\t.space " + offset);
+	myId.sym().setIsGlobal(true);
     }
 
     public int getOffsetSize(){
@@ -546,7 +547,9 @@ class FnDeclNode extends DeclNode {
 	Codegen.genPush(Codegen.FP);
 	int totalParamsOffset = computeOffsetFromFormals(); 
 	int totalLocalsOffset = computeOffsetFromLocals();
+	Codegen.p.println("#### push totalParamOffset  (+ 8) on ####");
 	Codegen.generate("addu", Codegen.FP, Codegen.SP, totalParamsOffset + 8); //size of params + 8
+	Codegen.p.println("#### push totalLocalOffset on ####");
     	Codegen.generate("subu", Codegen.SP, Codegen.SP, totalLocalsOffset);
     }
 
@@ -1275,7 +1278,7 @@ class WhileStmtNode extends StmtNode {
 
     public void codeGen(){
 	String labelStr1 = Codegen.nextLabel();
-	String lebalStr2 = Codegen.nextLabel();
+	String labelStr2 = Codegen.nextLabel();
 	Codegen.genLabel(labelStr1);
 	myExp.codeGen(); // result is placed in T0
 	Codegen.generate("li", Codegen.T1, 0);
@@ -1449,9 +1452,10 @@ class IntLitNode extends ExpNode {
 
 
     public void codeGen(){
-
+	Codegen.p.println("#### Int Lit ####");
 	Codegen.generate("li", Codegen.T0, myIntVal);
 	Codegen.genPush(Codegen.T0);
+	Codegen.p.println("#### END Int Lit ####");
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1537,8 +1541,10 @@ class TrueNode extends ExpNode {
     }
 
     public void codeGen(){
+	Codegen.p.println("#### Bool Lit ####");
 	Codegen.generate("li", Codegen.T0, 1);
 	Codegen.genPush(Codegen.T0);
+	Codegen.p.println("#### END Bool Lit ####");
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1578,8 +1584,10 @@ class FalseNode extends ExpNode {
 
 
     public void codeGen(){
+	Codegen.p.println("#### Bool Lit ####");
 	Codegen.generate("li", Codegen.T0, 0);
 	Codegen.genPush(Codegen.T0);
+	Codegen.p.println("#### END Bool Lit ####");
 
     }
     public void unparse(PrintWriter p, int indent) {
@@ -1919,14 +1927,15 @@ class AssignNode extends ExpNode {
     }
 
     public void codeGen(){
+	Codegen.p.println("#### Assignment ####");
 	//1. Eval the RHS expression, leaving the value on the stack
 	myExp.codeGen(); //result is pushed onto top of stack
 	//2. Push the address of the LHS ID onto the stack
-	myLHS.genAddr(); //Addr of LHS pushed onto stack
+	((IdNode)myLhs).genAddr(); //Addr of LHS pushed onto stack
 	//3. Store the value into the address
-	Codegen.genPop(Codegen.T0); //place addr into T0 by popping from stack
-	Codegen.genPop(Codegen.T1); //place value to store into T1
-	Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0); // 
+	Codegen.genPop(Codegen.T1); //place addr into T0 by popping from stack
+	Codegen.genPop(Codegen.T0); //place value to store into T1
+	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0); // 
 	//4. Leave a copy of the value on the stack
 	Codegen.genPush(Codegen.T1);
     }
@@ -2399,7 +2408,6 @@ class MinusNode extends ArithmeticExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to SUB the regs together and store in a temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
@@ -2424,13 +2432,13 @@ class TimesNode extends ArithmeticExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to MULT the regs together and then store the result from Hi reg in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
-	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
-	Codegen.genPush(Codegen.T0); // push result to stack
+	Codegen.generate("mult", "Multiplication Operation", Codegen.T1, Codegen.T0);
+	Codegen.generate("mflo", "Move from lo to T1", Codegen.T1);
+	Codegen.genPush(Codegen.T1); // push result to stack
     }
 }
 
@@ -2448,13 +2456,13 @@ class DivideNode extends ArithmeticExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to DIV the regs together and then store the result from Hi reg in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
-	//Codegen.generate("slt", Codegen.T0, Codegen.T1, Codegen.T0); //T0 has 1 if myExp1 >= myExp2
-	Codegen.genPush(Codegen.T0); // push result to stack
+	Codegen.generate("div", "Division Operation", Codegen.T1, Codegen.T0);
+	Codegen.generate("mflo", "Move from lo to T1", Codegen.T1);
+	Codegen.genPush(Codegen.T1); // push result to stack
     }
 }
 
@@ -2472,11 +2480,15 @@ class AndNode extends LogicalExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to ADD the regs together and then store the result in temp reg
+	//Evaluate the first (left) operand
 	myExp1.codeGen(); // will push result to stack
+	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
+	Codegen
+	Codegen.generate(
+	//if true, then evaluate the second(right) operand -> that value is value of whole expression
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
+
 	Codegen.generate("and", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if (myExp1 && myExp2) == 1
 	Codegen.genPush(Codegen.T0); // push result to stack
     }
@@ -2497,7 +2509,10 @@ class OrNode extends LogicalExpNode {
 
     public void codeGen(){
 	//TODO: generate code to OR the regs together and then store the result in temp reg
-	myExp1.codeGen(); // will push result to stack
+	
+	myExp1.codeGen(); //will push result to stack
+	
+	
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
@@ -2543,7 +2558,7 @@ class EqualsNode extends EqualityExpNode {
 		Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //increment addr1 by 1
 		Codegen.generate("addi", Codegen.T1, Codegen.T1, 1); //increment addr2 by 1
 		Codegen.generate("j", labelStr1); //jump to loop for next char
-		
+	
 		//If Not Equals
 		Codegen.genLabel(labelStr2);
 		Codegen.generate("li", Codegen.T0, 0); //load 1 for equals
