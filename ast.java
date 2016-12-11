@@ -2523,28 +2523,42 @@ class EqualsNode extends EqualityExpNode {
 	String labelStr = Codegen.nextLabel();
 	String labelStr1;
 	String labelStr2;
+	String labelStr3;
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 
-	//TODO: FIGURE OUT THIS STRLIT SHIT
+	//Is this string lit stuff okay??
 	if(myExp1 instanceof StrLitNode){
 		labelStr1 = Codegen.nextLabel();
-		lebalStr2 = Codegen.nextLabel();
-		//get first char
+		labelStr2 = Codegen.nextLabel();
+		labelStr3 = Codegen.nextLabel();
+		Codegen.genLabel(labelStr1); //label for beginning of loop
+		Codegen.generate("lb", Codegen.V0, Codegen.T0, 0); //get next char of 1st string
+		Codegen.generate("lb", Codegen.V1, Codegen.T1, 0); //get next char of 2nd string
+		Codegen.generate("bne", Codegen.V0, Codegen.V1 labelStr2); //compare the two strings
+		Codegen.generate("li", Codegen.V1, 0); //load 0 into V1 to represent null char
+		Codegen.generate("beq", Codegen.V0, Codegen.V1, labelStr3); //if end of string, they're equal!
+		Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //increment addr1 by 1
+		Codegen.generate("addi", Codegen.T1, Codegen.T1, 1); //increment addr2 by 1
+		Codegen.generate("j", labelStr1); //jump to loop for next char
 		
-		Codegen.genLabel(labelStr1);
-		//check whether equals
-		Codegen.generate("lw", Codegen.T1, 0);
-		Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr2);
-	
-		Codegen.generate("j", labelStr1);
+		//If Not Equals
 		Codegen.genLabel(labelStr2);
+		Codegen.generate("li", Codegen.T0, 0); //load 1 for equals
+		Codegen.generate("j", labelStr);
+		//If Equals
+		Codegen.genLabel(labelStr3);
+		Codegen.generate("li", Codegen.T0, 1); //load 1 for equals
+		Codegen.generate("j", labelStr);
 	}
-	Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
-	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr); //push if equal
-	Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
+	else{
+		//if comparing ints or bools
+		Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
+		Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr); //push if equal
+		Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
+	}
 	Codegen.genLabel(labelStr);
 	Codegen.genPush(Codegen.T0); // push result to stack
     }
@@ -2565,14 +2579,45 @@ class NotEqualsNode extends EqualityExpNode {
 
     public void codeGen(){
 	String labelStr = Codegen.nextLabel();
+	String labelStr1;
+	String labelStr2;
+	String labelStr3;
 	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
-	Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
-	Codegen.generate("bne", Codegen.T0, Codegen.T1, labelStr); //push if not equal
-	Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
+
+	//Is this string lit stuff okay??
+	if(myExp1 instanceof StrLitNode){
+		labelStr1 = Codegen.nextLabel();
+		labelStr2 = Codegen.nextLabel();
+		labelStr3 = Codegen.nextLabel();
+		Codegen.genLabel(labelStr1); //label for beginning of loop
+		Codegen.generate("lb", Codegen.V0, Codegen.T0, 0); //get next char of 1st string
+		Codegen.generate("lb", Codegen.V1, Codegen.T1, 0); //get next char of 2nd string
+		Codegen.generate("bne", Codegen.V0, Codegen.V1 labelStr2); //compare the two strings
+		Codegen.generate("li", Codegen.V1, 0); //load 0 into V1 to represent null char
+		Codegen.generate("beq", Codegen.V0, Codegen.V1, labelStr3); //if end of string, they're equal!
+		Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //increment addr1 by 1
+		Codegen.generate("addi", Codegen.T1, Codegen.T1, 1); //increment addr2 by 1
+		Codegen.generate("j", labelStr1); //jump to loop for next char
+		
+		//If Not Equals
+		Codegen.genLabel(labelStr2);
+		Codegen.generate("li", Codegen.T0, 1); //load 1 for equals
+		Codegen.generate("j", labelStr);
+		//If Equals
+		Codegen.genLabel(labelStr3);
+		Codegen.generate("li", Codegen.T0, 0); //load 1 for equals
+		Codegen.generate("j", labelStr);
+	}
+	else{
+
+		Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
+		Codegen.generate("bne", Codegen.T0, Codegen.T1, labelStr); //push if not equal
+		Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
+	}
 	Codegen.genLabel(labelStr);
 	Codegen.genPush(Codegen.T0); // push result to stack
     }
