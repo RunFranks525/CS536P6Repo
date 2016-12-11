@@ -1657,7 +1657,6 @@ class IdNode extends ExpNode {
     }
 
     public void codeGen(){
-
 	if(mySym.isGlobal()){
 		Codegen.generate("lw", Codegen.T0, "_"+ myStrVal);
 	}
@@ -1667,6 +1666,18 @@ class IdNode extends ExpNode {
 	Codegen.genPush(Codegen.T0);
     }
 
+<<<<<<< HEAD
+	if(mySym.isGlobal()){
+		Codegen.generate("lw", Codegen.T0, "_"+ myStrVal);
+	}
+	else{
+		Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, 0);
+	}
+	Codegen.genPush(Codegen.T0);
+    }
+
+=======
+>>>>>>> did ID node codeGen
     public void genAddr(){
 	if(mySym.isGlobal()){
 		Codegen.generate("la", Codegen.T0, "_"+ myStrVal);
@@ -1675,7 +1686,10 @@ class IdNode extends ExpNode {
 		Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, -8);
 	}
 	Codegen.genPush(Codegen.T0);
+<<<<<<< HEAD
 
+=======
+>>>>>>> did ID node codeGen
     }
 
     public void unparse(PrintWriter p, int indent) {
