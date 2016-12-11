@@ -1040,9 +1040,14 @@ class WriteStmtNode extends StmtNode {
 
 
     public void codeGen(){
+	Codegen.p.println("#### Write ####");
 	myExp.codeGen(); //result of Expr placed on top of stack
 	Codegen.genPop(Codegen.A0); //pop TOS into register $a0
-	Codegen.generate("li", Codegen.V0, 1); //set V0 to 1
+	if(this.typeOfExp.isStringType()) {
+		Codegen.generate("li", Codegen.V0, 4); //set V0 to 4 for strings
+	} else { 
+		Codegen.generate("li", Codegen.V0, 1); //set V0 to 1 for bools and ints
+	}
 	Codegen.generate("syscall"); //says to do this in the notes
 	
     }
@@ -2480,17 +2485,22 @@ class AndNode extends LogicalExpNode {
     }
 
     public void codeGen(){
-	//Evaluate the first (left) operand
+	//generate jump label
+	String labelString1 = Codegen.nextLabel();
+	Codegen.generate("li", Codegen.T1, "1", "Load truthy number into register T1");
 	myExp1.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
-	Codegen
-	Codegen.generate(
-	//if true, then evaluate the second(right) operand -> that value is value of whole expression
+	Codegen.generate("bne", Codegen.T0, Codegen.T1, labelString1); //if myExp1 != True, jump to label
+	//else, evaluate right operand, that value is result
 	myExp2.codeGen(); // will push result to stack
-	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
-
-	Codegen.generate("and", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if (myExp1 && myExp2) == 1
-	Codegen.genPush(Codegen.T0); // push result to stack
+	Codegen.genPop(Codegen.T0); //pop myExp2 result into T0
+	Codegen.generate("bne", Codegen.T0, Codegen.T1, labelString1); //if myExp2 != True, jump to label 
+	//else, value of the whole expression is true
+	Codegen.genPush(Codegen.T1); //push true to stack
+	//jump here
+	Codegen.genLabel(labelString1);
+	Codegen.generate("li", Codegen.T1, "0", "Load falsey number into register T1");
+	Codegen.genPush(Codegen.T1); //push false to stack
     }
 }
 
@@ -2508,17 +2518,23 @@ class OrNode extends LogicalExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to OR the regs together and then store the result in temp reg
-	
-	myExp1.codeGen(); //will push result to stack
-	
-	
-	myExp2.codeGen(); // will push result to stack
-	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
-	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
-	Codegen.generate("or", Codegen.T0, Codegen.T0, Codegen.T1); //T0 has 1 if (myExp1 || myExp2) == 1
-	Codegen.genPush(Codegen.T0); // push result to stack
-    }
+	//generate jump label
+	String labelString1 = Codegen.nextLabel();
+	Codegen.generate("li", Codegen.T1, "1", "Load truthy number into register T1");
+	myExp1.codeGen(); //push result of myExp1 to stack
+	Codegen.genPop(Codegen.T0); //pop myExp1 result into T0
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelString1); //if myExp1 == True, jump to label
+	//else evaluate the right operand, the value is result
+	myExp2.codeGen();
+	Codegen.genPop(Codegen.T0); //pop result into T0
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelString1); //if myExp2 == True, jump to label
+	//else, exp is false
+	Codegen.generate("li", Codegen.T1, "0", "Load falsey number into register T1");
+	Codegen.genPush(Codegen.T0);
+	//else, lhs is true, no need to evaluate rest of expression, push lhs on stack
+	Codegen.genLabel(labelString1);
+	Codegen.genPush(Codegen.T0); //push true to stack	    
+    }	
 }
 
 class EqualsNode extends EqualityExpNode {
@@ -2545,14 +2561,14 @@ class EqualsNode extends EqualityExpNode {
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 
 	//Is this string lit stuff okay??
-	if(myExp1 instanceof StrLitNode){
+	if(myExp1 instanceof StringLitNode){
 		labelStr1 = Codegen.nextLabel();
 		labelStr2 = Codegen.nextLabel();
 		labelStr3 = Codegen.nextLabel();
 		Codegen.genLabel(labelStr1); //label for beginning of loop
 		Codegen.generate("lb", Codegen.V0, Codegen.T0, 0); //get next char of 1st string
 		Codegen.generate("lb", Codegen.V1, Codegen.T1, 0); //get next char of 2nd string
-		Codegen.generate("bne", Codegen.V0, Codegen.V1 labelStr2); //compare the two strings
+		Codegen.generate("bne", Codegen.V0, Codegen.V1, labelStr2); //compare the two strings
 		Codegen.generate("li", Codegen.V1, 0); //load 0 into V1 to represent null char
 		Codegen.generate("beq", Codegen.V0, Codegen.V1, labelStr3); //if end of string, they're equal!
 		Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //increment addr1 by 1
@@ -2604,14 +2620,14 @@ class NotEqualsNode extends EqualityExpNode {
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
 
 	//Is this string lit stuff okay??
-	if(myExp1 instanceof StrLitNode){
+	if(myExp1 instanceof StringLitNode){
 		labelStr1 = Codegen.nextLabel();
 		labelStr2 = Codegen.nextLabel();
 		labelStr3 = Codegen.nextLabel();
 		Codegen.genLabel(labelStr1); //label for beginning of loop
 		Codegen.generate("lb", Codegen.V0, Codegen.T0, 0); //get next char of 1st string
 		Codegen.generate("lb", Codegen.V1, Codegen.T1, 0); //get next char of 2nd string
-		Codegen.generate("bne", Codegen.V0, Codegen.V1 labelStr2); //compare the two strings
+		Codegen.generate("bne", Codegen.V0, Codegen.V1, labelStr2); //compare the two strings
 		Codegen.generate("li", Codegen.V1, 0); //load 0 into V1 to represent null char
 		Codegen.generate("beq", Codegen.V0, Codegen.V1, labelStr3); //if end of string, they're equal!
 		Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //increment addr1 by 1

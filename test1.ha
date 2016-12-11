@@ -6,6 +6,7 @@ int c;
 void main() {
 	int anInt;
 	anInt = 5;
+	cout << anInt;
 }
 
 
