@@ -1407,6 +1407,9 @@ abstract class ExpNode extends ASTnode {
     abstract public int lineNum();
     abstract public int charNum();
     abstract public void codeGen();
+    public void genAddr(){
+	//do nothing
+    }
 }
 
 class IntLitNode extends ExpNode {
@@ -1666,18 +1669,8 @@ class IdNode extends ExpNode {
 	Codegen.genPush(Codegen.T0);
     }
 
-<<<<<<< HEAD
-	if(mySym.isGlobal()){
-		Codegen.generate("lw", Codegen.T0, "_"+ myStrVal);
-	}
-	else{
-		Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, 0);
-	}
-	Codegen.genPush(Codegen.T0);
-    }
 
-=======
->>>>>>> did ID node codeGen
+
     public void genAddr(){
 	if(mySym.isGlobal()){
 		Codegen.generate("la", Codegen.T0, "_"+ myStrVal);
@@ -1686,10 +1679,7 @@ class IdNode extends ExpNode {
 		Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, -8);
 	}
 	Codegen.genPush(Codegen.T0);
-<<<<<<< HEAD
 
-=======
->>>>>>> did ID node codeGen
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1922,13 +1912,16 @@ class AssignNode extends ExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to store the result of one Exp in the register for another Exp
 	//1. Eval the RHS expression, leaving the value on the stack
-	myExp.codeGen();
+	myExp.codeGen(); //result is pushed onto top of stack
 	//2. Push the address of the LHS ID onto the stack
-	myLHS.genAddr();
+	myLHS.genAddr(); //Addr of LHS pushed onto stack
 	//3. Store the value into the address
+	Codegen.genPop(Codegen.T0); //place addr into T0 by popping from stack
+	Codegen.genPop(Codegen.T1); //place value to store into T1
+	Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0); // 
 	//4. Leave a copy of the value on the stack
+	Codegen.genPush(Codegen.T1);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2520,12 +2513,28 @@ class EqualsNode extends EqualityExpNode {
     }
 
     public void codeGen(){
-	Srting labelStr = Codegen.nextLabel();
-	//TODO: generate code to compare regs together and then store the result in temp reg
+	String labelStr = Codegen.nextLabel();
+	String labelStr1;
+	String labelStr2;
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
+
+	//TODO: FIGURE OUT THIS STRLIT SHIT
+	if(myExp1 instanceof StrLitNode){
+		labelStr1 = Codegen.nextLabel();
+		lebalStr2 = Codegen.nextLabel();
+		//get first char
+		
+		Codegen.genLabel(labelStr1);
+		//check whether equals
+		Codegen.generate("lw", Codegen.T1, 0);
+		Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr2);
+	
+		Codegen.generate("j", labelStr1);
+		Codegen.genLabel(labelStr2);
+	}
 	Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
 	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr); //push if equal
 	Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
