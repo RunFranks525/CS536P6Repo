@@ -28,7 +28,7 @@ class ProgramNode extends ASTnode {
      */
     public void nameAnalysis() {
         SymTable symTab = new SymTable();
-        myDeclList.nameAnalysis(symTab);
+        myDeclList.nameAnalysis(symTab, 0);
         SemSym mainSymbol = symTab.lookupGlobal("main");
         if(mainSymbol == null){
           //Report error "No Main Function" 0,0
@@ -64,16 +64,12 @@ class DeclListNode extends ASTnode {
      * nameAnalysis
      * Given a symbol table symTab, process all of the decls in the list.
      */
-    public void nameAnalysis(SymTable symTab) {
-        nameAnalysis(symTab, symTab);
+    public void nameAnalysis(SymTable symTab, int initialOffset) {
+        nameAnalysis(symTab, symTab, initialOffset);
     }
 
-    public int totalOffsetSize(){
-      int totalOffsetSize = 0;
-      for(DeclNode declNode : myDecls){
-        totalOffsetSize += declNode.getOffsetSize();
-      }
-      return totalOffsetSize;
+    public int totalOffsetSize(){      
+      return myDecls.size() * 4;
     }
 
     public void codeGen(){
@@ -82,18 +78,20 @@ class DeclListNode extends ASTnode {
 	      }
     }
 
-    /**
-     * nameAnalysis
-     * Given a symbol table symTab and a global symbol table globalTab
-     * (for processing struct names in variable decls), process all of the
-     * decls in the list.
-     */
-    public void nameAnalysis(SymTable symTab, SymTable globalTab) {
-        for (DeclNode node : myDecls) {
+//TODO: maybe need to delete
+    public int length() {
+	return myDecls.size();
+    }
+
+
+    public void nameAnalysis(SymTable symTab, SymTable globalTab, int initialOffset) {
+        for (int i = 0; i < myDecls.size(); i++) {
+	    DeclNode node = myDecls.get(i);
+	    int offset = -(i * 4);
             if (node instanceof VarDeclNode) {
-                ((VarDeclNode)node).nameAnalysis(symTab, globalTab);
+                ((VarDeclNode)node).nameAnalysis(symTab, globalTab, (offset + initialOffset));
             } else {
-                node.nameAnalysis(symTab);
+                node.nameAnalysis(symTab, 0);
             }
         }
     }
@@ -138,7 +136,7 @@ class FormalsListNode extends ASTnode {
     public List<Type> nameAnalysis(SymTable symTab) {
         List<Type> typeList = new LinkedList<Type>();
         for (FormalDeclNode node : myFormals) {
-            SemSym sym = node.nameAnalysis(symTab);
+            SemSym sym = node.nameAnalysis(symTab, 0);
             if (sym != null) {
                 typeList.add(sym.getType());
             }
@@ -189,8 +187,8 @@ class FnBodyNode extends ASTnode {
      * - process the statement list
      */
     public void nameAnalysis(SymTable symTab) {
-        myDeclList.nameAnalysis(symTab);
-        myStmtList.nameAnalysis(symTab);
+        myDeclList.nameAnalysis(symTab, 0);
+        myStmtList.nameAnalysis(symTab, totalLocalsOffsetSize());
     }
 
     /**
@@ -201,7 +199,7 @@ class FnBodyNode extends ASTnode {
     }
 
     public int totalLocalsOffsetSize(){
-      return myDeclList.totalOffsetSize();
+      return myDeclList.length() * 4;
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -209,7 +207,7 @@ class FnBodyNode extends ASTnode {
         myStmtList.unparse(p, indent);
     }
 
-    public void codeGen(){
+    public void codeGen(){	
 	myStmtList.codeGen();
     }
 
@@ -227,9 +225,9 @@ class StmtListNode extends ASTnode {
      * nameAnalysis
      * Given a symbol table symTab, process each statement in the list.
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         for (StmtNode node : myStmts) {
-            node.nameAnalysis(symTab);
+            node.nameAnalysis(symTab, currentOffset);
         }
     }
 
@@ -331,7 +329,7 @@ abstract class DeclNode extends ASTnode {
     /**
      * Note: a formal decl needs to return a sym
      */
-    abstract public SemSym nameAnalysis(SymTable symTab);
+    abstract public SemSym nameAnalysis(SymTable symTab, int initialOffset);
     public void codeGen() { }
 
     public int getOffsetSize(){ return 0; }
@@ -362,11 +360,11 @@ class VarDeclNode extends DeclNode {
      * globalTab is global symbol table (for struct type names)
      * symTab and globalTab can be the same
      */
-    public SemSym nameAnalysis(SymTable symTab) {
-        return nameAnalysis(symTab, symTab);
+    public SemSym nameAnalysis(SymTable symTab, int initialOffset) {
+        return nameAnalysis(symTab, symTab, initialOffset);
     }
 
-    public SemSym nameAnalysis(SymTable symTab, SymTable globalTab) {
+    public SemSym nameAnalysis(SymTable symTab, SymTable globalTab, int offset) {
         boolean badDecl = false;
         String name = myId.name();
         SemSym sym = null;
@@ -405,7 +403,7 @@ class VarDeclNode extends DeclNode {
                     sym = new StructSym(structId);
                 }
                 else {
-                    sym = new SemSym(myType.type(), 4);
+                    sym = new SemSym(myType.type(), offset);
                 }
                 symTab.addDecl(name, sym);
                 myId.link(sym);
@@ -427,13 +425,15 @@ class VarDeclNode extends DeclNode {
 	String offset = "4";
 	Codegen.generate(".data");
 	Codegen.generate(".align 2");
-	Codegen.p.print(myId.name() + ":");
-	Codegen.p.print("\t.space " + offset);
+	Codegen.p.print("_" + myId.name() + ":");
+	Codegen.p.println("\t.space " + offset);
 	myId.sym().setIsGlobal(true);
     }
 
     public int getOffsetSize(){
-      return myId.sym().getSymOffsetSize();
+      int symOffset = myId.sym().getSymOffsetSize();
+      System.out.println(symOffset);
+      return symOffset;
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -476,7 +476,7 @@ class FnDeclNode extends DeclNode {
      *     process the body of the function
      *     exit scope
      */
-    public SemSym nameAnalysis(SymTable symTab) {
+    public SemSym nameAnalysis(SymTable symTab, int initialOffset) {
         String name = myId.name();
         FnSym sym = null;
 
@@ -547,11 +547,9 @@ class FnDeclNode extends DeclNode {
 
     }
 
-    private void genFnPrologue() {
+    private void genFnPrologue(int totalParamsOffset, int totalLocalsOffset) {
 	Codegen.genPush(Codegen.RA);
 	Codegen.genPush(Codegen.FP);
-	int totalParamsOffset = computeOffsetFromFormals();
-	int totalLocalsOffset = computeOffsetFromLocals();
 	Codegen.generate("addu", Codegen.FP, Codegen.SP, totalParamsOffset + 8); //size of params + 8
     	Codegen.generate("subu", Codegen.SP, Codegen.SP, totalLocalsOffset);
     }
@@ -572,9 +570,11 @@ class FnDeclNode extends DeclNode {
     }
 
     public void codeGen(){
+	int totalParamsOffset = computeOffsetFromFormals();
+	int totalLocalsOffset = computeOffsetFromLocals();
 	genFnPreamble();
 	Codegen.p.println();
-	genFnPrologue();
+	genFnPrologue(totalParamsOffset, totalLocalsOffset);
 	Codegen.p.println();
 	genFnBody();
 	Codegen.p.println();
@@ -622,7 +622,7 @@ class FormalDeclNode extends DeclNode {
      *     then issue multiply declared error message and return null
      * else add a new entry to the symbol table and return that Sym
      */
-    public SemSym nameAnalysis(SymTable symTab) {
+    public SemSym nameAnalysis(SymTable symTab, int initialOffset) {
         String name = myId.name();
         boolean badDecl = false;
         SemSym sym = null;
@@ -688,7 +688,7 @@ class StructDeclNode extends DeclNode {
      * if no errors
      *     add a new entry to symbol table for this struct
      */
-    public SemSym nameAnalysis(SymTable symTab) {
+    public SemSym nameAnalysis(SymTable symTab, int offset) {
         String name = myId.name();
         boolean badDecl = false;
 
@@ -701,7 +701,7 @@ class StructDeclNode extends DeclNode {
         SymTable structSymTab = new SymTable();
 
         // process the fields of the struct
-        myDeclList.nameAnalysis(structSymTab, symTab);
+        myDeclList.nameAnalysis(structSymTab, symTab, 0);
 
         if (!badDecl) {
             try {   // add entry to symbol table
@@ -825,7 +825,7 @@ class StructNode extends TypeNode {
 // **********************************************************************
 
 abstract class StmtNode extends ASTnode {
-    abstract public void nameAnalysis(SymTable symTab);
+    abstract public void nameAnalysis(SymTable symTab, int currentOffset);
     abstract public void typeCheck(Type retType);
     abstract public void codeGen();
 }
@@ -839,7 +839,7 @@ class AssignStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         myAssign.nameAnalysis(symTab);
     }
 
@@ -873,7 +873,7 @@ class PostIncStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         myExp.nameAnalysis(symTab);
     }
 
@@ -923,7 +923,7 @@ class PostDecStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         myExp.nameAnalysis(symTab);
     }
 
@@ -973,7 +973,7 @@ class ReadStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         myExp.nameAnalysis(symTab);
     }
 
@@ -1031,7 +1031,7 @@ class WriteStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         myExp.nameAnalysis(symTab);
     }
 
@@ -1103,11 +1103,11 @@ class IfStmtNode extends StmtNode {
      * - process the decls and stmts
      * - exit the scope
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         myExp.nameAnalysis(symTab);
         symTab.addScope();
-        myDeclList.nameAnalysis(symTab);
-        myStmtList.nameAnalysis(symTab);
+        myDeclList.nameAnalysis(symTab, currentOffset);
+        myStmtList.nameAnalysis(symTab, currentOffset);
         try {
             symTab.removeScope();
         } catch (EmptySymTableException ex) {
@@ -1183,11 +1183,11 @@ class IfElseStmtNode extends StmtNode {
      * - process the decls and stmts of else
      * - exit the scope
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         myExp.nameAnalysis(symTab);
         symTab.addScope();
-        myThenDeclList.nameAnalysis(symTab);
-        myThenStmtList.nameAnalysis(symTab);
+        myThenDeclList.nameAnalysis(symTab, currentOffset);
+        myThenStmtList.nameAnalysis(symTab, currentOffset);
         try {
             symTab.removeScope();
         } catch (EmptySymTableException ex) {
@@ -1196,8 +1196,8 @@ class IfElseStmtNode extends StmtNode {
             System.exit(-1);
         }
         symTab.addScope();
-        myElseDeclList.nameAnalysis(symTab);
-        myElseStmtList.nameAnalysis(symTab);
+        myElseDeclList.nameAnalysis(symTab, currentOffset);
+        myElseStmtList.nameAnalysis(symTab, currentOffset);
         try {
             symTab.removeScope();
         } catch (EmptySymTableException ex) {
@@ -1278,11 +1278,11 @@ class WhileStmtNode extends StmtNode {
      * - process the decls and stmts
      * - exit the scope
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         myExp.nameAnalysis(symTab);
         symTab.addScope();
-        myDeclList.nameAnalysis(symTab);
-        myStmtList.nameAnalysis(symTab);
+        myDeclList.nameAnalysis(symTab, currentOffset);
+        myStmtList.nameAnalysis(symTab, currentOffset);
         try {
             symTab.removeScope();
         } catch (EmptySymTableException ex) {
@@ -1345,7 +1345,7 @@ class CallStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         myCall.nameAnalysis(symTab);
     }
 
@@ -1381,7 +1381,7 @@ class ReturnStmtNode extends StmtNode {
      * Given a symbol table symTab, perform name analysis on this node's child,
      * if it has one
      */
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, int currentOffset) {
         if (myExp != null) {
             myExp.nameAnalysis(symTab);
         }
@@ -1526,13 +1526,13 @@ class StringLitNode extends ExpNode {
     }
 
     public void codeGen(){
-      String label = Codegen.nextLabel();
+	String label = Codegen.nextLabel();
 	Codegen.generate(".data");
       	Codegen.p.print(label + ":");
-	Codegen.p.print("\t.asciiz " + myStrVal);
+	Codegen.p.println("\t.asciiz " + myStrVal);
 	Codegen.generate(".text");
-     Codegen.generate("la", Codegen.T0, label);
-     Codegen.genPush(Codegen.T0);
+	Codegen.generate("la", Codegen.T0, label);
+	Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {

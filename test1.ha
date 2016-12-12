@@ -5,8 +5,10 @@ int c;
 
 void main() {
 	int anInt;
+	int sum;
 	anInt = 5;
-	cout << anInt;
+	sum = anInt + anInt;
+	
 }
 
 
