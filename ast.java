@@ -1009,6 +1009,14 @@ class ReadStmtNode extends StmtNode {
 
     public void codeGen(){
 	//TODO: generate code to load a word into a register
+	Codegen.p.println("#### Read ####");
+	Codegen.generate("li", Codegen.V0, 5); //set V0 to 1 for bools and ints
+	Codegen.generate("syscall"); //says to do this in the notes
+	myExp.genAddr(); //addr of Expr placed on top of stack
+	Codegen.genPop(Codegen.T0);
+	Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0); //Value from read should be in V0
+	//Leave a copy of the value on the stack
+	Codegen.genPush(Codegen.T0); //do we need to do this?
     }
 
     public void unparse(PrintWriter p, int indent) {
