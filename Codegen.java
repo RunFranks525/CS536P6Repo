@@ -233,7 +233,6 @@ public class Codegen {
     // **********************************************************************
     public static void genLabel(String label, String comment) {
         p.print(label + ":");
-	System.out.println(p.toString());
         if (comment != "") 
             p.print("\t\t" + "# " + comment);
         p.println();

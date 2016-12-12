@@ -89,7 +89,6 @@ class DeclListNode extends ASTnode {
      * decls in the list.
      */
     public void nameAnalysis(SymTable symTab, SymTable globalTab) {
-      	System.out.println("DeclListSize: " + myDecls.size());
         for (DeclNode node : myDecls) {
             if (node instanceof VarDeclNode) {
                 ((VarDeclNode)node).nameAnalysis(symTab, globalTab);
@@ -138,7 +137,6 @@ class FormalsListNode extends ASTnode {
      */
     public List<Type> nameAnalysis(SymTable symTab) {
         List<Type> typeList = new LinkedList<Type>();
-	System.out.println(length());
         for (FormalDeclNode node : myFormals) {
             SemSym sym = node.nameAnalysis(symTab);
             if (sym != null) {
@@ -510,13 +508,10 @@ class FnDeclNode extends DeclNode {
 	int totalFormalsOffsetSize = computeOffsetFromFormals();
 
 	//build up offsets
-	System.out.println("Params offset for: " + totalFormalsOffsetSize);
 	sym.setFormalsOffsetSize(totalFormalsOffsetSize);
 	if (sym != null) {
             sym.addFormals(typeList);
         }
-
-	System.out.println("About to do name analysis on body");
         myBody.nameAnalysis(symTab); // process the function body
 	int totalLocalsOffsetSize = computeOffsetFromLocals();
         sym.setLocalsOffsetSize(totalLocalsOffsetSize);
@@ -557,9 +552,7 @@ class FnDeclNode extends DeclNode {
 	Codegen.genPush(Codegen.FP);
 	int totalParamsOffset = computeOffsetFromFormals();
 	int totalLocalsOffset = computeOffsetFromLocals();
-	Codegen.p.println("#### push totalParamOffset  (+ 8) on ####");
 	Codegen.generate("addu", Codegen.FP, Codegen.SP, totalParamsOffset + 8); //size of params + 8
-	Codegen.p.println("#### push totalLocalOffset on ####");
     	Codegen.generate("subu", Codegen.SP, Codegen.SP, totalLocalsOffset);
     }
 
@@ -1008,15 +1001,11 @@ class ReadStmtNode extends StmtNode {
 
 
     public void codeGen(){
-	//TODO: generate code to load a word into a register
-	Codegen.p.println("#### Read ####");
-	Codegen.generate("li", Codegen.V0, 5); //set V0 to 1 for bools and ints
+	Codegen.generate("li", Codegen.V0, 5); 
 	Codegen.generate("syscall"); //says to do this in the notes
 	myExp.genAddr(); //addr of Expr placed on top of stack
 	Codegen.genPop(Codegen.T0);
 	Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0); //Value from read should be in V0
-	//Leave a copy of the value on the stack
-	Codegen.genPush(Codegen.T0); //do we need to do this?
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1077,7 +1066,6 @@ class WriteStmtNode extends StmtNode {
 
 
     public void codeGen(){
-	Codegen.p.println("#### Write ####");
 	myExp.codeGen(); //result of Expr placed on top of stack
 	Codegen.genPop(Codegen.A0); //pop TOS into register $a0
 	if(this.typeOfExp.isStringType()) {
@@ -1496,10 +1484,8 @@ class IntLitNode extends ExpNode {
 
 
     public void codeGen(){
-	Codegen.p.println("#### Int Lit ####");
 	Codegen.generate("li", Codegen.T0, myIntVal);
 	Codegen.genPush(Codegen.T0);
-	Codegen.p.println("#### END Int Lit ####");
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1586,10 +1572,8 @@ class TrueNode extends ExpNode {
     }
 
     public void codeGen(){
-	    Codegen.p.println("#### Bool Lit ####");
 	    Codegen.generate("li", Codegen.T0, 1);
 	    Codegen.genPush(Codegen.T0);
-	    Codegen.p.println("#### END Bool Lit ####");
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1629,10 +1613,8 @@ class FalseNode extends ExpNode {
 
 
     public void codeGen(){
-	Codegen.p.println("#### Bool Lit ####");
 	Codegen.generate("li", Codegen.T0, 0);
 	Codegen.genPush(Codegen.T0);
-	Codegen.p.println("#### END Bool Lit ####");
 
     }
     public void unparse(PrintWriter p, int indent) {
@@ -1888,7 +1870,7 @@ class DotAccessExpNode extends ExpNode {
     }
 
     public void codeGen(){
-	//TODO: absolutely freaking NOTHING! :)
+
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1972,7 +1954,6 @@ class AssignNode extends ExpNode {
     }
 
     public void codeGen(){
-	Codegen.p.println("#### Assignment ####");
 	//1. Eval the RHS expression, leaving the value on the stack
 	myExp.codeGen(); //result is pushed onto top of stack
 	//2. Push the address of the LHS ID onto the stack
@@ -2438,7 +2419,6 @@ class PlusNode extends ArithmeticExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to ADD the regs together and store in a temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
