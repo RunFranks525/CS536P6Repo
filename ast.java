@@ -891,7 +891,7 @@ class PostIncStmtNode extends StmtNode {
 	//1. Eval the RHS expression, leaving the value on the stack
 	myExp.codeGen(); //result is pushed onto top of stack
 	//2. Push the address of the LHS ID onto the stack
-	((IdNode)myLhs).genAddr(); //Addr of LHS pushed onto stack
+	((IdNode)myExp).genAddr(); //Addr of LHS pushed onto stack
 	//3. Store the value into the address
 	Codegen.genPop(Codegen.T1); //place addr into T1 by popping from stack
 	Codegen.genPop(Codegen.T0); //place value to store into T0
@@ -941,7 +941,7 @@ class PostDecStmtNode extends StmtNode {
 	//1. Eval the RHS expression, leaving the value on the stack
 	myExp.codeGen(); //result is pushed onto top of stack
 	//2. Push the address of the LHS ID onto the stack
-	((IdNode)myLhs).genAddr(); //Addr of LHS pushed onto stack
+	((IdNode)myExp).genAddr(); //Addr of LHS pushed onto stack
 	//3. Store the value into the address
 	Codegen.genPop(Codegen.T1); //place addr into T1 by popping from stack
 	Codegen.genPop(Codegen.T0); //place value to store into T0
@@ -2598,7 +2598,7 @@ class EqualsNode extends EqualityExpNode {
 
 		//If Not Equals
 		Codegen.genLabel(labelStr2);
-		Codegen.generate("li", Codegen.T0, 0); //load 1 for equals
+		Codegen.generate("li", Codegen.T0, 0); //load 0 for not equals
 		Codegen.generate("j", labelStr);
 		//If Equals
 		Codegen.genLabel(labelStr3);
@@ -2609,8 +2609,9 @@ class EqualsNode extends EqualityExpNode {
 		//if comparing ints or bools
 		Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
 		Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr); //push if equal
-		Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
+		Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then go to push
 	}
+	//code for any type, push to stack
 	Codegen.genLabel(labelStr);
 	Codegen.genPush(Codegen.T0); // push result to stack
     }
@@ -2630,11 +2631,11 @@ class NotEqualsNode extends EqualityExpNode {
     }
 
     public void codeGen(){
-	String labelStr = Codegen.nextLabel();
+	String labelStr = Codegen.nextLabel(); //this is needed regardless
+	//these are needed if comparing strings
 	String labelStr1;
 	String labelStr2;
 	String labelStr3;
-	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
@@ -2642,6 +2643,7 @@ class NotEqualsNode extends EqualityExpNode {
 
 	//Is this string lit stuff okay??
 	if(myExp1 instanceof StringLitNode){
+		//generate labels
 		labelStr1 = Codegen.nextLabel();
 		labelStr2 = Codegen.nextLabel();
 		labelStr3 = Codegen.nextLabel();
@@ -2657,19 +2659,20 @@ class NotEqualsNode extends EqualityExpNode {
 
 		//If Not Equals
 		Codegen.genLabel(labelStr2);
-		Codegen.generate("li", Codegen.T0, 1); //load 1 for equals
+		Codegen.generate("li", Codegen.T0, 1); //load 1 for not equals
 		Codegen.generate("j", labelStr);
 		//If Equals
 		Codegen.genLabel(labelStr3);
-		Codegen.generate("li", Codegen.T0, 0); //load 1 for equals
+		Codegen.generate("li", Codegen.T0, 0); //load 0 for equals
 		Codegen.generate("j", labelStr);
 	}
 	else{
-
+		//if literal, not string
 		Codegen.generate("li", Codegen.T0, 1); //Load 1 by default
 		Codegen.generate("bne", Codegen.T0, Codegen.T1, labelStr); //push if not equal
-		Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then push
+		Codegen.generate("li", Codegen.T0, 0); //otherwise load 0, then go to push
 	}
+	//code for any type, push to stack
 	Codegen.genLabel(labelStr);
 	Codegen.genPush(Codegen.T0); // push result to stack
     }
@@ -2689,7 +2692,6 @@ class LessNode extends RelationalExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
@@ -2713,7 +2715,6 @@ class GreaterNode extends RelationalExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
@@ -2738,7 +2739,6 @@ class LessEqNode extends RelationalExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
@@ -2763,7 +2763,6 @@ class GreaterEqNode extends RelationalExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to compare the regs together and then store the result in temp reg
 	myExp1.codeGen(); // will push result to stack
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
