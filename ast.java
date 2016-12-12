@@ -545,7 +545,7 @@ class FnDeclNode extends DeclNode {
     private void genFnPrologue() {
 	Codegen.genPush(Codegen.RA);
 	Codegen.genPush(Codegen.FP);
-	int totalParamsOffset = computeOffsetFromFormals(); 
+	int totalParamsOffset = computeOffsetFromFormals();
 	int totalLocalsOffset = computeOffsetFromLocals();
 	Codegen.p.println("#### push totalParamOffset  (+ 8) on ####");
 	Codegen.generate("addu", Codegen.FP, Codegen.SP, totalParamsOffset + 8); //size of params + 8
@@ -576,7 +576,7 @@ class FnDeclNode extends DeclNode {
 	genFnBody();
 	Codegen.p.println();
 	genFnEpilogue();
-	Codegen.p.println();	
+	Codegen.p.println();
     }
 
     /**
@@ -1045,11 +1045,11 @@ class WriteStmtNode extends StmtNode {
 	Codegen.genPop(Codegen.A0); //pop TOS into register $a0
 	if(this.typeOfExp.isStringType()) {
 		Codegen.generate("li", Codegen.V0, 4); //set V0 to 4 for strings
-	} else { 
+	} else {
 		Codegen.generate("li", Codegen.V0, 1); //set V0 to 1 for bools and ints
 	}
 	Codegen.generate("syscall"); //says to do this in the notes
-	
+
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1115,7 +1115,7 @@ class IfStmtNode extends StmtNode {
         //myDeclList.codeGen();
 
 	myStmtList.codeGen();
-	Codegen.genLabel(labelStr); 
+	Codegen.genLabel(labelStr);
 
     }
 
@@ -1203,14 +1203,14 @@ class IfElseStmtNode extends StmtNode {
 	String labelStr2 = Codegen.nextLabel();
 	myExp.codeGen();
 	Codegen.generate("li", Codegen.T1, 0);
-	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr1); 
+	Codegen.generate("beq", Codegen.T0, Codegen.T1, labelStr1);
         myThenDeclList.codeGen();
 	myThenStmtList.codeGen();
-	Codegen.generate("j", labelStr2); 
-	Codegen.genLabel(labelStr1); 
+	Codegen.generate("j", labelStr2);
+	Codegen.genLabel(labelStr1);
 	myElseDeclList.codeGen();
 	myElseStmtList.codeGen();
-	Codegen.genLabel(labelStr2); 
+	Codegen.genLabel(labelStr2);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1501,12 +1501,13 @@ class StringLitNode extends ExpNode {
     }
 
     public void codeGen(){
-	Codegen.generate(".data");
-	String label = Codegen.nextLabel();
-	Codegen.generateLabeled(label, ".asciiz", "", myStrVal);
-	Codegen.generate(".text");
-	Codegen.generate("la", Codegen.T0, label);
-	Codegen.genPush(Codegen.T0);
+      String label = Codegen.nextLabel();
+	    Codegen.generate(".data");
+      Codegen.p.print(label + ":");
+	    Codegen.p.print("\t.asciiz " + offset);
+	    Codegen.generate(".text");
+	    Codegen.generate("la", Codegen.T0, label);
+	    Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1546,10 +1547,10 @@ class TrueNode extends ExpNode {
     }
 
     public void codeGen(){
-	Codegen.p.println("#### Bool Lit ####");
-	Codegen.generate("li", Codegen.T0, 1);
-	Codegen.genPush(Codegen.T0);
-	Codegen.p.println("#### END Bool Lit ####");
+	    Codegen.p.println("#### Bool Lit ####");
+	    Codegen.generate("li", Codegen.T0, 1);
+	    Codegen.genPush(Codegen.T0);
+	    Codegen.p.println("#### END Bool Lit ####");
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1940,7 +1941,7 @@ class AssignNode extends ExpNode {
 	//3. Store the value into the address
 	Codegen.genPop(Codegen.T1); //place addr into T0 by popping from stack
 	Codegen.genPop(Codegen.T0); //place value to store into T1
-	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0); // 
+	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0); //
 	//4. Leave a copy of the value on the stack
 	Codegen.genPush(Codegen.T1);
     }
@@ -2190,11 +2191,12 @@ class NotNode extends UnaryExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to do NOT on reg represented by Exp
-	myExp.codeGen(); // will push result to stack
-	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
-	Codegen.generate("not", Codegen.T0, Codegen.T0); //
-	Codegen.genPush(Codegen.T0); // push result to stack
+	    //TODO: Check this
+	    myExp.codeGen(); // will push result to stack
+	    Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
+      Codegen.generate("li", Codegen.T1, 0);
+      Codegen.generate("addi", Codegen.T1, Codegen.T1, -1);
+      Codegen.generate("xor", Codegen.T0, Codegen.T0, Codegen.T1);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2494,7 +2496,7 @@ class AndNode extends LogicalExpNode {
 	//else, evaluate right operand, that value is result
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T0); //pop myExp2 result into T0
-	Codegen.generate("bne", Codegen.T0, Codegen.T1, labelString1); //if myExp2 != True, jump to label 
+	Codegen.generate("bne", Codegen.T0, Codegen.T1, labelString1); //if myExp2 != True, jump to label
 	//else, value of the whole expression is true
 	Codegen.genPush(Codegen.T1); //push true to stack
 	//jump here
@@ -2533,8 +2535,8 @@ class OrNode extends LogicalExpNode {
 	Codegen.genPush(Codegen.T0);
 	//else, lhs is true, no need to evaluate rest of expression, push lhs on stack
 	Codegen.genLabel(labelString1);
-	Codegen.genPush(Codegen.T0); //push true to stack	    
-    }	
+	Codegen.genPush(Codegen.T0); //push true to stack
+    }
 }
 
 class EqualsNode extends EqualityExpNode {
@@ -2574,7 +2576,7 @@ class EqualsNode extends EqualityExpNode {
 		Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //increment addr1 by 1
 		Codegen.generate("addi", Codegen.T1, Codegen.T1, 1); //increment addr2 by 1
 		Codegen.generate("j", labelStr1); //jump to loop for next char
-	
+
 		//If Not Equals
 		Codegen.genLabel(labelStr2);
 		Codegen.generate("li", Codegen.T0, 0); //load 1 for equals
@@ -2633,7 +2635,7 @@ class NotEqualsNode extends EqualityExpNode {
 		Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //increment addr1 by 1
 		Codegen.generate("addi", Codegen.T1, Codegen.T1, 1); //increment addr2 by 1
 		Codegen.generate("j", labelStr1); //jump to loop for next char
-		
+
 		//If Not Equals
 		Codegen.genLabel(labelStr2);
 		Codegen.generate("li", Codegen.T0, 1); //load 1 for equals
