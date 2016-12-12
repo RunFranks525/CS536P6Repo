@@ -888,8 +888,17 @@ class PostIncStmtNode extends StmtNode {
 
 
     public void codeGen(){
-	//TODO: generate code to add 1 to the given variable
-	myExp.codeGen();
+	//1. Eval the RHS expression, leaving the value on the stack
+	myExp.codeGen(); //result is pushed onto top of stack
+	//2. Push the address of the LHS ID onto the stack
+	((IdNode)myLhs).genAddr(); //Addr of LHS pushed onto stack
+	//3. Store the value into the address
+	Codegen.genPop(Codegen.T1); //place addr into T1 by popping from stack
+	Codegen.genPop(Codegen.T0); //place value to store into T0
+	Codegen.generate("addi", Codegen.T0, Codegen.T0, 1);
+	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0); //
+	//4. Leave a copy of the value on the stack
+	Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -929,7 +938,17 @@ class PostDecStmtNode extends StmtNode {
 
 
     public void codeGen(){
-	//TODO: generate code to subtract 1 to the given variable
+	//1. Eval the RHS expression, leaving the value on the stack
+	myExp.codeGen(); //result is pushed onto top of stack
+	//2. Push the address of the LHS ID onto the stack
+	((IdNode)myLhs).genAddr(); //Addr of LHS pushed onto stack
+	//3. Store the value into the address
+	Codegen.genPop(Codegen.T1); //place addr into T1 by popping from stack
+	Codegen.genPop(Codegen.T0); //place value to store into T0
+	Codegen.generate("subi", Codegen.T0, Codegen.T0, 1);
+	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0); //
+	//4. Leave a copy of the value on the stack
+	Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1943,7 +1962,7 @@ class AssignNode extends ExpNode {
 	Codegen.genPop(Codegen.T0); //place value to store into T1
 	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0); //
 	//4. Leave a copy of the value on the stack
-	Codegen.genPush(Codegen.T1);
+	Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
