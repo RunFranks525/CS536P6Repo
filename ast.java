@@ -304,6 +304,12 @@ class ExpListNode extends ASTnode {
         }
     }
 
+    public void codeGen() {
+	for(ExpNode exp : myExps) {
+		exp.codeGen();
+	}
+    }
+
     public void unparse(PrintWriter p, int indent) {
         Iterator<ExpNode> it = myExps.iterator();
         if (it.hasNext()) { // if there is at least one element
@@ -538,8 +544,12 @@ class FnDeclNode extends DeclNode {
  	Codegen.p.println(".text");
 	if(myId.name().equals("main")){
 		Codegen.p.println(".globl main");
+		Codegen.genLabel(myId.name(), "function decl for " + myId.name());
+		Codegen.p.println("__start:");
+	} else {
+		Codegen.genLabel(myId.name(), "function decl for " + myId.name());
 	}
-	Codegen.genLabel(myId.name(), "function decl for " + myId.name());
+
     }
 
     private void genFnPrologue() {
@@ -1352,6 +1362,7 @@ class CallStmtNode extends StmtNode {
 
     public void codeGen(){
 	myCall.codeGen();
+	Codegen.genPop(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1409,8 +1420,9 @@ class ReturnStmtNode extends StmtNode {
 
     public void codeGen(){
 	myExp.codeGen(); //Places result into T0
+	Codegen.genPop(Codegen.T0);
 	Codegen.generate("addi", Codegen.V0, Codegen.T0, 0);
-	//TODO: generate code to pop the return address (for PC) from stack
+	//Codegen.generate("move", Codegen.V0, Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -1521,12 +1533,12 @@ class StringLitNode extends ExpNode {
 
     public void codeGen(){
       String label = Codegen.nextLabel();
-	    Codegen.generate(".data");
-      Codegen.p.print(label + ":");
-	    Codegen.p.print("\t.asciiz " + offset);
-	    Codegen.generate(".text");
-	    Codegen.generate("la", Codegen.T0, label);
-	    Codegen.genPush(Codegen.T0);
+	Codegen.generate(".data");
+      	Codegen.p.print(label + ":");
+	Codegen.p.print("\t.asciiz " + myStrVal);
+	Codegen.generate(".text");
+     Codegen.generate("la", Codegen.T0, label);
+     Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2043,7 +2055,13 @@ class CallExpNode extends ExpNode {
     }
 
     public void codeGen(){
-
+	//1. Evaluate each actual parameter, push the values onto the stack
+	myExpList.codeGen();
+	//2. Jump and link (Jump to the called function, leaving the return addr in the RA register)
+	myId.genJumpAndLink();
+	//3. Push the returned value (V0 or F0) onto the stack
+	Codegen.genPush(Codegen.V0);
+	
     }
 
     // ** unparse **
@@ -2169,10 +2187,12 @@ class UnaryMinusNode extends UnaryExpNode {
     }
 
     public void codeGen(){
-	//TODO: generate code to multiply register represented by Exp by -1
 	myExp.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
-	Codegen.generate("not", Codegen.T0, Codegen.T0); //negate
+	Codegen.generate("li", Codegen.T1, 0);
+      	Codegen.generate("addi", Codegen.T1, Codegen.T1, -1);
+        Codegen.generate("xor", Codegen.T0, Codegen.T0, Codegen.T1);
+	//negate
 	Codegen.generate("addi", Codegen.T0, Codegen.T0, 1); //add one
 	Codegen.genPush(Codegen.T0); // push result to stack
     }
@@ -2210,12 +2230,12 @@ class NotNode extends UnaryExpNode {
     }
 
     public void codeGen(){
-	    //TODO: Check this
 	    myExp.codeGen(); // will push result to stack
 	    Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
-      Codegen.generate("li", Codegen.T1, 0);
-      Codegen.generate("addi", Codegen.T1, Codegen.T1, -1);
-      Codegen.generate("xor", Codegen.T0, Codegen.T0, Codegen.T1);
+            Codegen.generate("li", Codegen.T1, 0);
+      	    Codegen.generate("addi", Codegen.T1, Codegen.T1, -1);
+      	    Codegen.generate("xor", Codegen.T0, Codegen.T0, Codegen.T1);
+	    Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
