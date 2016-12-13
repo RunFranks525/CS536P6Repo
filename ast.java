@@ -404,6 +404,7 @@ class VarDeclNode extends DeclNode {
                 }
                 else {
                     sym = new SemSym(myType.type(), offset);
+		    System.out.println(myId.name() + ": " + offset);
                 }
                 symTab.addDecl(name, sym);
                 myId.link(sym);
@@ -542,7 +543,7 @@ class FnDeclNode extends DeclNode {
 		Codegen.genLabel(myId.name(), "function decl for " + myId.name());
 		Codegen.p.println("__start:");
 	} else {
-		Codegen.genLabel(myId.name(), "function decl for " + myId.name());
+		Codegen.genLabel("_" + myId.name(), "function decl for " + myId.name());
 	}
 
     }
@@ -558,15 +559,18 @@ class FnDeclNode extends DeclNode {
 	myBody.codeGen();
     }
 
-    private void genFnEpilogue() {
-	 int totalParamsOffset = computeOffsetFromFormals();
-	 String loadString = "-" + totalParamsOffset + "(" + Codegen.FP + ")";
-	 String restoreString = "-" + (totalParamsOffset + 4) + "(" + Codegen.FP + ")";
-	 Codegen.generate("lw", Codegen.RA, loadString);
-	 Codegen.generate("move", Codegen.T0, Codegen.FP);
-	 Codegen.generate("lw", Codegen.FP, restoreString);
-	 Codegen.generate("move", Codegen.SP, Codegen.T0);
-	 Codegen.generate("jr", Codegen.RA);
+    private void genFnEpilogue(int totalParamsOffset, int totalLocalsOffset) {
+	 if(myId.name().equals("main")){
+		Codegen.generate("li", Codegen.V0, 10);
+		Codegen.generate("syscall");
+	 } else {
+		Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, totalParamsOffset);
+	 	Codegen.generate("move", Codegen.T0, Codegen.FP);
+	 	Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP, (totalParamsOffset + 4));
+	 	Codegen.generate("move", Codegen.SP, Codegen.T0);
+	 	Codegen.generate("jr", Codegen.RA);
+	 }	
+ 	 
     }
 
     public void codeGen(){
@@ -578,7 +582,7 @@ class FnDeclNode extends DeclNode {
 	Codegen.p.println();
 	genFnBody();
 	Codegen.p.println();
-	genFnEpilogue();
+	genFnEpilogue(totalParamsOffset, totalLocalsOffset);
 	Codegen.p.println();
     }
 
@@ -1697,7 +1701,7 @@ class IdNode extends ExpNode {
     }
 
     public void genJumpAndLink(){
-	String jumpLabel = "_<" + myStrVal + ">";
+	String jumpLabel = "_" + myStrVal;
 	Codegen.generate("jal", jumpLabel);
     }
 
@@ -1706,7 +1710,8 @@ class IdNode extends ExpNode {
 		Codegen.generate("lw", Codegen.T0, "_"+ myStrVal);
 	}
 	else{
-		Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, 0);
+		int offset = mySym.getSymOffsetSize();
+		Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, offset);
 	}
 	Codegen.genPush(Codegen.T0);
     }
@@ -1714,11 +1719,12 @@ class IdNode extends ExpNode {
 
 
     public void genAddr(){
+	int offset = mySym.getSymOffsetSize();
 	if(mySym.isGlobal()){
 		Codegen.generate("la", Codegen.T0, "_"+ myStrVal);
 	}
 	else{
-		Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, -8);
+		Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, offset);
 	}
 	Codegen.genPush(Codegen.T0);
 
@@ -1954,6 +1960,8 @@ class AssignNode extends ExpNode {
     }
 
     public void codeGen(){
+	int offset = ((IdNode)myLhs).sym().getSymOffsetSize();
+	System.out.println(offset);
 	//1. Eval the RHS expression, leaving the value on the stack
 	myExp.codeGen(); //result is pushed onto top of stack
 	//2. Push the address of the LHS ID onto the stack
@@ -1961,7 +1969,7 @@ class AssignNode extends ExpNode {
 	//3. Store the value into the address
 	Codegen.genPop(Codegen.T1); //place addr into T0 by popping from stack
 	Codegen.genPop(Codegen.T0); //place value to store into T1
-	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0); //
+	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, offset); //
 	//4. Leave a copy of the value on the stack
 	Codegen.genPush(Codegen.T0);
     }
@@ -2470,8 +2478,8 @@ class TimesNode extends ArithmeticExpNode {
 	myExp2.codeGen(); // will push result to stack
 	Codegen.genPop(Codegen.T1); // Pop myExp2 result into T1
 	Codegen.genPop(Codegen.T0); // pop myExp1 result into T0
-	Codegen.generate("mult", "Multiplication Operation", Codegen.T1, Codegen.T0);
-	Codegen.generate("mflo", "Move from lo to T1", Codegen.T1);
+	Codegen.generateWithComment("mult", "Multiplication Operation", Codegen.T1, Codegen.T0);
+	Codegen.generateWithComment("mflo", "Move from lo to T1", Codegen.T1);
 	Codegen.genPush(Codegen.T1); // push result to stack
     }
 }

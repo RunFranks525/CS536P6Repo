@@ -3,12 +3,15 @@ int a;
 int b;
 int c;
 
-void main() {
+int f(int some) {
 	int anInt;
-	int sum;
-	anInt = 5;
-	sum = anInt + anInt;
-	
+	int product;
+	anInt = 2;
+	product = anInt * anInt;
+	return product;
 }
 
-
+void main() {
+	int answer;
+	answer = f(5);
+}

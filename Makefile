@@ -61,4 +61,4 @@ mips:
 # clean
 ###
 clean:
-	rm -f *~ *.class parser.java harambe.jlex.java sym.java
+	rm -f *~ *.class parser.java harambe.jlex.java sym.java *.s
